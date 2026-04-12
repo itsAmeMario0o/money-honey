@@ -7,11 +7,12 @@
 # Required env vars:
 #   VM_IP                 — public IP of the Splunk VM (from terraform output)
 #   SPLUNK_ADMIN_PASSWORD — strong password for the Splunk admin account
-#   CLOUDFLARED_TOKEN     — Cloudflare Tunnel connector token for the
-#                           money-honey-splunk tunnel (retrieve from
-#                           Key Vault: `az keyvault secret show ...`)
 #
-# Optional:
+# Optional env vars:
+#   CLOUDFLARED_TOKEN     — Cloudflare Tunnel connector token for the
+#                           money-honey-splunk tunnel. When set, cloudflared
+#                           is installed + enabled. When not set, the step
+#                           is skipped (you can re-run later to add it).
 #   KEY_FILE       (default: ../private_key/splunk.pem)
 #   VM_USER        (default: azureuser)
 #   SPLUNK_VERSION (default: 9.3.2)
@@ -23,7 +24,8 @@ KEY_FILE=${KEY_FILE:-"$(dirname "$0")/../private_key/splunk.pem"}
 VM_USER=${VM_USER:-azureuser}
 VM_IP=${VM_IP:?set VM_IP (run: terraform output -raw splunk_vm_public_ip)}
 PASSWORD=${SPLUNK_ADMIN_PASSWORD:?set SPLUNK_ADMIN_PASSWORD to a strong password}
-CF_TOKEN=${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN (from: az keyvault secret show --vault-name <kv> --name cloudflare-tunnel-splunk-token --query value -o tsv)}
+# CLOUDFLARED_TOKEN is optional — if unset, the cloudflared install step
+# is skipped and the VM stays on its public-IP SSH path.
 
 SPLUNK_VERSION=${SPLUNK_VERSION:-9.3.2}
 SPLUNK_BUILD=${SPLUNK_BUILD:-d8bb32809498}
@@ -68,21 +70,23 @@ sudo /opt/splunk/bin/splunk http-event-collector enable \
   -uri https://127.0.0.1:8089 || true
 
 # --- Cloudflare Tunnel (Layer 8) ---
-# The tunnel token was passed in via env var CLOUDFLARED_TOKEN. Install
-# the official Debian package from GitHub releases and register it as a
-# systemd service. The service dials outbound to Cloudflare; no inbound
-# port is opened.
-if systemctl is-active --quiet cloudflared 2>/dev/null; then
-  echo "✔  cloudflared already running — skipping install."
+# Only installed if a CLOUDFLARED_TOKEN was supplied. Without the
+# token we leave the VM on its public-IP SSH path and defer the
+# tunnel setup to a later run.
+if [ -n "${CLOUDFLARED_TOKEN:-}" ]; then
+  if systemctl is-active --quiet cloudflared 2>/dev/null; then
+    echo "✔  cloudflared already running — skipping install."
+  else
+    echo "→  Installing cloudflared (Cloudflare Tunnel connector)..."
+    curl -sSL -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+    sudo dpkg -i /tmp/cloudflared.deb
+    rm -f /tmp/cloudflared.deb
+    sudo cloudflared service install "${CLOUDFLARED_TOKEN}"
+  fi
+  sudo systemctl enable --now cloudflared
 else
-  echo "→  Installing cloudflared (Cloudflare Tunnel connector)..."
-  curl -sSL -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-  sudo dpkg -i /tmp/cloudflared.deb
-  rm -f /tmp/cloudflared.deb
-  sudo cloudflared service install "${CF_TOKEN}"
+  echo "⏭  CLOUDFLARED_TOKEN not set — skipping cloudflared install. Re-run the script later with the token exported to add the tunnel."
 fi
-
-sudo systemctl enable --now cloudflared
 
 echo "✅ Splunk + cloudflared ready on this VM."
 REMOTE_SCRIPT
