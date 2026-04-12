@@ -8,19 +8,20 @@ Money Honey answers personal finance questions in the voice of a nurturing-but-d
 
 The project demonstrates a simple principle: **assume any one layer can fail, so no single layer gets to matter.** Treat the AI like an untrusted process and wrap it in independent controls that each do one job well.
 
-## 🛡️ The seven layers
+## 🛡️ The eight layers
 
 | # | Layer | What it does |
 |---|---|---|
 | 1 | **Cilium network identity** | eBPF-powered L3/L4 policy. Default-deny ingress and egress. Identity-aware, not IP-aware. |
 | 2 | **Tetragon runtime enforcement** | Kernel-level process, file, and network visibility. Violations get `SIGKILL`, not alerts. |
 | 3 | **Azure Key Vault + CSI driver** | Secrets mounted as volumes via Managed Identity. No env vars, no configmaps, no service principal passwords. |
-| 4 | **Caddy TLS + headers** | Automatic Let's Encrypt. CSP, X-Frame-Options, server header stripped. |
+| 4 | **Caddy (ClusterIP) internal routing** | Reverse proxy inside the cluster. Enforces security headers (CSP, X-Frame-Options, stripped Server header). TLS is handled by Cloudflare at the edge, not here. |
 | 5 | **Cisco AI Defense** | AIBOM on every PR, Adversarial Hubness Detector on PDF changes, IDE scanner in VS Code. |
-| 6 | **GitHub Actions gates** | Build → scan → deploy. AIBOM and Hubness block PRs that break the AI supply chain. |
+| 6 | **GitHub Actions gates** | Build → scan → deploy. AIBOM, Hubness, and code-quality checks all block merges. |
 | 7 | **Splunk observability** | Every process, network call, and violation lands in one searchable place. |
+| 8 | **Cloudflare Tunnel + Zero Trust** | `cloudflared` dials outbound from each origin. No public inbound app ports. Email-domain allowlists (Free plan, ≤50 users). See [`docs/specs/cloudflare-access-v1.md`](docs/specs/cloudflare-access-v1.md). |
 
-Plus pre-commit guardrails (gitleaks + tfsec), GitHub push protection, and a planned **Cloudflare Tunnel + Access** layer for zero-trust public access (see [`docs/specs/cloudflare-access-v2.md`](docs/specs/cloudflare-access-v2.md)).
+Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, prettier, vitest) and **GitHub Secret Protection with push protection** — three independent lines of defense against leaked secrets.
 
 ## 🧱 Tech stack
 
@@ -34,10 +35,12 @@ Plus pre-commit guardrails (gitleaks + tfsec), GitHub push protection, and a pla
 | Runtime security | Tetragon (eBPF, DaemonSet) |
 | Secrets | Azure Key Vault + CSI Secret Store Driver |
 | Observability | Fluent Bit + OpenTelemetry → Splunk Enterprise Free (Ubuntu 22.04 VM) |
+| Public edge | Cloudflare Tunnel + Zero Trust (Free plan) |
 | IaC | Terraform (AzureRM 4.x) with remote state in Azure Blob |
 | CI/CD | GitHub Actions, GHCR for images |
 | Registry | GitHub Container Registry |
 | Docs | GitHub Pages (Jekyll / Merlot theme) |
+| Code quality | black, ruff, mypy, pytest (Python); prettier, eslint, tsc, vitest (TypeScript) |
 
 ## 🚦 Current status
 
@@ -49,7 +52,7 @@ Plus pre-commit guardrails (gitleaks + tfsec), GitHub push protection, and a pla
 | 4. Kubernetes manifests | ⏳ Next |
 | 5. CI/CD workflows | ⏳ |
 | 6. Jekyll docs site | ⏳ |
-| v2. Cloudflare Tunnel + Access | 📝 Spec'd, implemented after v1 runs |
+| 3a. Cloudflare Tunnel (Layer 8) | 🚧 Tokens in Key Vault, cloudflared on Splunk VM. Chatbot tunnel pod in step 4. |
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, build plan, and Claude Code session rules.
 
@@ -121,4 +124,4 @@ Read [`CLAUDE.md`](./CLAUDE.md) §Rules before editing anything. Every change st
 
 ## 💰 Cost (monthly, running)
 
-~$153 running, ~$65 when `az aks stop` is applied. v2 Cloudflare migration drops another ~$22.
+~$133–137/mo running (Cloudflare Free saves ~$18 vs. an Azure Standard LB). ~$65/mo when `az aks stop` is applied between demos.

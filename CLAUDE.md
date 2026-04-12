@@ -58,8 +58,8 @@ Tetragon runs as a DaemonSet, observing every process execution, file access, an
 **Layer 3: Secrets isolation (Azure Key Vault + CSI Driver)**
 No secrets in environment variables, ConfigMaps, or code. All credentials (Claude API key, Splunk HEC token) stored in Azure Key Vault. CSI Secret Store Driver mounts them as volumes. Managed Identity authentication. No service principal passwords.
 
-**Layer 4: TLS termination and header hardening (Caddy)**
-Caddy handles automatic Let's Encrypt TLS for money-honey.mariojruiz.com. Security headers enforced: X-Frame-Options DENY, Content-Security-Policy, Server header stripped. Reverse proxy routes `/api/*` to FastAPI and `/` to React. No direct pod exposure.
+**Layer 4: Internal routing and header hardening (Caddy)**
+Caddy runs as a `ClusterIP` Service inside the cluster — no public IP, no Let's Encrypt, no inbound port. TLS is handled by Cloudflare at the edge (Layer 8). Caddy's job in v1 is internal: reverse-proxy `/api/*` to FastAPI and `/` to React, enforce security headers (X-Frame-Options DENY, Content-Security-Policy, strip Server header) on every response before it flows back through the tunnel.
 
 ### Domain 2: AI/LLM Security
 
@@ -100,30 +100,42 @@ Every public entry point to Money Honey sits behind Cloudflare. `cloudflared` ru
 User Request
     |
     v
-[Caddy - Layer 4]  TLS termination, header hardening
+[Cloudflare Edge - Layer 8]  Zero Trust auth, TLS termination, DDoS
+    |
+    | (Cloudflare Tunnel — outbound dial, no inbound ports)
+    v
+[cloudflared Deployment]     Connector pod inside AKS
     |
     v
-[React + FastAPI]   Application layer (the chatbot)
+[Caddy ClusterIP - Layer 4]  Internal reverse proxy, security headers
     |
     v
-[LangChain + FAISS] RAG retrieval from PDFs
+[React + FastAPI]            Application layer (the chatbot)
     |
     v
-[Claude API]        LLM inference (egress controlled by Layer 1)
+[LangChain + FAISS]          RAG retrieval from PDFs
+    |
+    v
+[Claude API]                 LLM inference (egress controlled by Layer 1)
     |
     |--- [Tetragon - Layer 2] watches every process, file, network call
-    |--- [Cilium - Layer 1] enforces network identity and segmentation
+    |--- [Cilium - Layer 1]   enforces network identity and segmentation
     |--- [Key Vault - Layer 3] injects secrets without exposure
     |
     v
-[Splunk - Layer 7]  All telemetry converges here
+[Splunk - Layer 7]           All telemetry converges here
+                              (also reached via its own cloudflared tunnel)
 
 CI/CD Pipeline (pre-deployment):
-[AIBOM - Layer 5]   AI supply chain inventory
-[Hubness - Layer 5] RAG integrity check
+[AIBOM - Layer 5]      AI supply chain inventory
+[Hubness - Layer 5]    RAG integrity check
 [IDE Scanner - Layer 5] Local code security scan
-[GitHub Actions - Layer 6] Build, scan, deploy gates
-[Webex - Layer 6]   Notification on every build
+[GitHub Actions - Layer 6] Build, scan, deploy, quality gates
+[Webex - Layer 6]      Notification on every build
+
+Code-quality gates (run on every commit + every PR):
+[pre-commit]           gitleaks, tfsec, black, ruff, mypy, eslint, prettier, tsc
+[quality.yaml CI]      pytest + vitest + the same lint/format/type checks
 ```
 
 ---
@@ -208,13 +220,29 @@ The tone across all code should be consistent: plain, readable, no surprises.
 
 | Component | Technology | Notes |
 |-----------|-----------|-------|
-| Frontend | React | Static SPA served by Caddy |
-| Backend | FastAPI (Python) | REST API, handles chat requests |
+| Frontend | React 18 + Vite + TypeScript | Static SPA, served via nginx, routed by Caddy inside cluster |
+| Backend | FastAPI (Python 3.12) | REST API, handles chat requests |
 | RAG framework | LangChain | Document loading, chunking, retrieval chain |
-| LLM | Claude API (Anthropic) | Direct API, not Azure OpenAI or Bedrock |
-| Vector store | FAISS | In-memory or local persistence, 3-4 PDFs |
+| LLM | Claude API (Anthropic, Haiku 4.5) | Direct API, not Azure OpenAI or Bedrock |
+| Vector store | FAISS | In-memory, rebuilt on pod start from PDFs |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 | Local model (~80 MB), runs in the FastAPI pod. No external API. |
-| Reverse proxy | Caddy | Automatic Let's Encrypt TLS |
+| Internal routing | Caddy (ClusterIP) | Reverse proxy + security headers. TLS handled by Cloudflare at the edge. |
+| Public edge | Cloudflare Tunnel + Zero Trust Free | `cloudflared` dials outbound from each origin. No public inbound app ports. Layer 8. |
+
+### Code quality tooling
+
+| Area | Tool | When it runs |
+|------|------|--------------|
+| Python lint | `ruff` | pre-commit hook + CI `quality.yaml` |
+| Python format | `black` | pre-commit hook + CI |
+| Python types | `mypy` | pre-commit hook + CI |
+| Python tests | `pytest` | pre-commit hook + CI |
+| TypeScript types | `tsc --noEmit` | pre-commit hook + CI |
+| TypeScript lint | `eslint` | pre-commit hook + CI |
+| TypeScript format | `prettier --check` | pre-commit hook + CI |
+| TypeScript tests | `vitest run` | pre-commit hook + CI |
+| Secret scan | `gitleaks` (with custom Azure rules in `.gitleaks.toml`) | pre-commit hook + CI |
+| Terraform security | `tfsec` | pre-commit hook + CI |
 
 ### Infrastructure
 
@@ -389,12 +417,13 @@ Webex Bot via `chrivand/action-webex-js`. Secrets: `WEBEX_BOT_TOKEN`, `WEBEX_ROO
 | AKS disks (3x 32 GB) | Standard SSD | ~$7.20 |
 | Splunk VM | Standard_B2ms | ~$61 |
 | Splunk disk | 64 GB SSD | ~$4.80 |
-| Public IP | Standard static | $3.60 |
-| Load Balancer | Standard | ~$18 |
+| Public IP (Splunk SSH only) | Standard static | $3.60 |
+| Load Balancer | N/A — Caddy is ClusterIP; Cloudflare Tunnel is the public edge | $0 |
+| Cloudflare Zero Trust | Free plan, up to 50 users | $0 |
 | Key Vault | Standard | <$1 |
 | Claude API | $20 prepaid | ~$3-5 |
 | Embeddings | Local (sentence-transformers) | $0 |
-| **Total** | | **~$153-155/mo (running)** |
+| **Total** | | **~$133-137/mo (running)** — Cloudflare saves ~$18 vs. Azure LB |
 
 With `az aks stop` when not demoing: ~$65-70/month (Splunk VM + storage only).
 
