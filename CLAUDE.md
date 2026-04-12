@@ -280,13 +280,13 @@ FQDN filtering, L7 policy, Hubble, eBPF host routing all require ACNS. Use IP-ba
 Cannot be Helm-installed on Azure CNI powered by Cilium. Marketplace or BYOCNI only. Deferred.
 
 ### No ArgoCD, no Trivy
-Deferred to v2. GitHub Actions + kubectl apply for deployment. AIBOM for supply chain scanning.
+ArgoCD deferred to v2. GitHub Actions + kubectl apply for deployment. AIBOM for supply chain scanning. Trivy for image CVE + k8s manifest misconfig + filesystem dependency scans (see `.github/workflows/docker-build.yaml` + `quality.yaml`).
 
 ### Tetragon via Helm
 Only Helm release on this cluster. Chart version 1.3.0 pinned. Process cred tracking, namespace tracking, Prometheus on 2112, runtime hooks, JSON export.
 
 ### Worker nodes
-3x Standard_B2als_v2 (2 vCPU, 4 GB RAM). Cheapest viable option. 3 nodes required for Cilium.
+3x Standard_B2s (2 vCPU, 4 GB RAM). Switched from Standard_B2als_v2 because eastus `standardBasv2Family` quota was exhausted — `standardBSFamily` has headroom. 3 nodes required for Cilium. Switch to Standard_D2s_v3 for 8 GB RAM if the cluster goes production-adjacent.
 
 ---
 
@@ -414,7 +414,7 @@ Webex Bot via `chrivand/action-webex-js`. Secrets: `WEBEX_BOT_TOKEN`, `WEBEX_ROO
 | Component | SKU | Monthly |
 |-----------|-----|---------|
 | AKS control plane | Free tier | $0 |
-| AKS workers (3x) | Standard_B2als_v2 | ~$54 |
+| AKS workers (3x) | Standard_B2s | ~$90 |
 | AKS disks (3x 32 GB) | Standard SSD | ~$7.20 |
 | Splunk VM | Standard_B2ms | ~$61 |
 | Splunk disk | 64 GB SSD | ~$4.80 |
@@ -540,7 +540,6 @@ The docs site is a first-class deliverable, not an afterthought. Update docs whe
 
 - Isovalent Enterprise (via Azure Marketplace)
 - ACNS (Hubble, FQDN filtering, L7 policies)
-- Trivy (container image CVE scanning)
 - ArgoCD (GitOps continuous delivery)
 - Smoke tests post-deploy
 - Secrets rotation automation
