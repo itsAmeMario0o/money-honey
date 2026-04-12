@@ -83,9 +83,9 @@ variable "node_count" {
 }
 
 variable "node_sku" {
-  description = "VM SKU for AKS worker nodes."
+  description = "VM SKU for AKS worker nodes. Defaults to Standard_B2s (older B-series) because the standardBasv2Family quota in eastus was exhausted; standardBSFamily has room. Switch to Standard_D2s_v3 if you need 8 GB RAM per node or want the AKS-recommended family."
   type        = string
-  default     = "Standard_B2als_v2"
+  default     = "Standard_B2s"
 }
 
 // ---- Key Vault ----
