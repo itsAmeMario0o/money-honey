@@ -42,12 +42,22 @@ All committed to main (`docs/specs/k8s-v1.md` has the rationale), all pass `kube
 
 ## 🔜 Next steps (in order)
 
-### Step 5: CI/CD workflows
-- `docker-build.yaml` — build React + FastAPI images, push to GHCR
-- `deploy.yaml` — `azure/aks-set-context` + `kubectl apply -f k8s/app -f k8s/frontend -f k8s/caddy`
-- `aibom.yaml` — Cisco AIBOM scan on every PR
-- `hubness-scan.yaml` — Cisco Hubness Detector on PDF changes
-- Secrets needed: `AZURE_CREDENTIALS` (service principal JSON). GHCR uses built-in `GITHUB_TOKEN`.
+### Step 5: CI/CD workflows — ✅ written, needs repo secrets before first real run
+Four workflows committed alongside the existing `quality.yaml`:
+- `docker-build.yaml` — Buildx + GHCR push, SHA + `:latest` tags, GHA cache
+- `deploy.yaml` — OIDC Azure login + `kubectl apply` scoped to `k8s/{app,frontend,caddy}`
+- `aibom.yaml` — Cisco AIBOM scan placeholder (verify action interface)
+- `hubness-scan.yaml` — Cisco Hubness Detector placeholder
+
+**Repo secrets operator must set:**
+- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (OIDC federated SP)
+- `WEBEX_BOT_TOKEN`, `WEBEX_ROOM_ID` (both gated with `if: secrets.X != ''` so absence is non-blocking)
+
+### Step 6: Jekyll docs site — ✅ core pages written
+- `docs/index.md` — landing page with three-domain framework
+- `docs/architecture/{overview,infrastructure,ai-security,developer-workflow}.md` — layer deep-dives
+- Setup + chatbot sub-pages are placeholders, fill in before public launch
+- Enable Pages: repo Settings → Pages → Source: `main` / `/docs`
 
 ### Post-step-5 operator tasks (once CI has built images)
 1. Install Splunk on the VM:
