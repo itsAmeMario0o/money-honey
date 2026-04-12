@@ -40,6 +40,10 @@ resource "azurerm_kubernetes_cluster" "money_honey" {
     network_data_plane  = "cilium"
     network_policy      = "cilium"
     load_balancer_sku   = "standard"
+    // Service CIDR is a cluster-internal range for ClusterIP Services.
+    // Must NOT overlap the VNet (10.0.0.0/16) or AKS rejects the config.
+    service_cidr   = var.aks_service_cidr
+    dns_service_ip = var.aks_dns_service_ip
   }
 
   // Azure AD + Azure RBAC for Kubernetes. No local accounts.

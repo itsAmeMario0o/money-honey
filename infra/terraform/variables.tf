@@ -50,6 +50,18 @@ variable "splunk_subnet_cidr" {
   default     = "10.0.4.0/28"
 }
 
+variable "aks_service_cidr" {
+  description = "CIDR used by Kubernetes Service cluster IPs. MUST NOT overlap with vnet_cidr."
+  type        = string
+  default     = "172.16.0.0/16"
+}
+
+variable "aks_dns_service_ip" {
+  description = "Cluster DNS IP — must fall inside aks_service_cidr."
+  type        = string
+  default     = "172.16.0.10"
+}
+
 // ---- AKS ----
 
 variable "cluster_name" {
