@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Scan app/ and frontend/ dependencies (blocks HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.35.0
         env:
           # Authenticated GitHub API calls prevent rate limits when the
           # action pulls the Trivy binary + vulnerability DB.
@@ -121,7 +121,7 @@ jobs:
       # Software Bill of Materials AND an AI-specific Bill of Materials
       # per the project's Layer 5 + Layer 6 story.
       - name: Generate CycloneDX SBOM (non-blocking)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.35.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -147,7 +147,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Scan k8s/ manifests for misconfigurations
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.35.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
