@@ -1,0 +1,58 @@
+# Cisco AI Defense — Adversarial Hubness Detector.
+# Runs on every PR that modifies anything under app/knowledge_base/.
+# Fails the PR if a PDF's hubness score indicates a RAG-poisoning
+# attempt.
+#
+# NOTE: placeholder invocation; verify the action interface against
+# https://github.com/cisco-ai-defense when wiring this up for real.
+
+name: Hubness scan (RAG integrity)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - app/knowledge_base/**
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  hubness:
+    name: Adversarial hubness detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Hubness Detector
+        run: |
+          # Placeholder — replace with the official Cisco action reference.
+          # Expected behaviour: fail with non-zero exit if any PDF has a
+          # hubness score above the configured threshold.
+          pip install pypdf sentence-transformers scikit-learn numpy
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          pdfs = list(Path("app/knowledge_base/pdfs").glob("*.pdf"))
+          if not pdfs:
+              print("No PDFs present in this PR; skipping.")
+              sys.exit(0)
+          # TODO: drop in the real Hubness Detector implementation.
+          print(f"Pretending to score {len(pdfs)} PDFs — OK (placeholder).")
+          PY
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hubness-report
+          path: /tmp/hubness-*.json
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,0 +1,54 @@
+# Cisco AI Defense — AIBOM (AI Bill of Materials).
+# Runs on every PR that touches app/ or frontend/. Fails the PR
+# if an untracked AI component is detected.
+#
+# NOTE: the exact action invocation below is a placeholder based on
+# the public cisco-ai-defense/aibom repo. Before this workflow runs
+# for real, verify the action path + inputs against the current repo:
+#   https://github.com/cisco-ai-defense/aibom
+
+name: AIBOM (AI supply chain)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - app/**
+      - frontend/**
+      - docs/specs/**
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  aibom:
+    name: Generate + validate AI Bill of Materials
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Placeholder: clone the aibom repo and run its CLI.
+      # Replace with the official action once its interface stabilizes.
+      - name: Run AIBOM scan
+        run: |
+          git clone --depth 1 https://github.com/cisco-ai-defense/aibom /tmp/aibom
+          cd /tmp/aibom
+          pip install -e . || true
+          # Scan both services; if either returns an untracked-dependency
+          # error, the whole step fails via set -e.
+          python -m aibom scan "$GITHUB_WORKSPACE/app" --output /tmp/aibom-app.json
+          python -m aibom scan "$GITHUB_WORKSPACE/frontend" --output /tmp/aibom-frontend.json
+
+      - name: Upload AIBOM manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: aibom-manifests
+          path: /tmp/aibom-*.json
+          retention-days: 30

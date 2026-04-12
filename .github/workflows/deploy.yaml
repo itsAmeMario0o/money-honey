@@ -1,0 +1,80 @@
+# Deploy app, frontend, and Caddy manifests to AKS on every push to main.
+#
+# Scope-limited deliberately (FR-10 in cicd-v1.md spec): network
+# policies, tracing policies, SecretProviderClass, observability
+# workloads, and cloudflared all require human review — this workflow
+# does NOT touch them.
+#
+# Auth: Azure OIDC federation via azure/login. No client secrets.
+# See docs/specs/cicd-v1.md §3 for the repo-secrets list.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - k8s/app/**
+      - k8s/frontend/**
+      - k8s/caddy/**
+      - app/**
+      - frontend/**
+
+permissions:
+  contents: read
+  id-token: write  # required for OIDC federation with Azure
+
+env:
+  AKS_RESOURCE_GROUP: money-honey-rg
+  AKS_CLUSTER_NAME: money-honey-aks
+
+jobs:
+  deploy:
+    name: kubectl apply app manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+          admin: 'false'
+
+      - name: Apply app manifests
+        run: |
+          kubectl apply -f k8s/app/
+          kubectl apply -f k8s/frontend/
+          kubectl apply -f k8s/caddy/
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n money-honey rollout status deployment/fastapi --timeout=5m
+          kubectl -n money-honey rollout status deployment/react --timeout=5m
+          kubectl -n money-honey rollout status deployment/caddy --timeout=5m
+
+  notify:
+    name: Webex notification
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Webex message
+        if: ${{ secrets.WEBEX_BOT_TOKEN != '' }}
+        uses: chrivand/action-webex-js@b75da3c89c7e9d5f18abdf9de472cbc8f2c20f14
+        with:
+          token: ${{ secrets.WEBEX_BOT_TOKEN }}
+          roomId: ${{ secrets.WEBEX_ROOM_ID }}
+          message: |
+            **deploy** on `${{ github.ref_name }}` -> AKS money-honey-aks
+            Result: ${{ needs.deploy.result }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
