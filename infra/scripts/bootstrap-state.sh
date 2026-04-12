@@ -72,7 +72,23 @@ else
     -o none
 fi
 
+
+# --- Grant the current user Storage Blob Data Contributor on the SA ---
+# backend.tf uses `use_azuread_auth = true`, so Terraform talks to the
+# blob container as the signed-in user (data plane), not via storage
+# keys. Subscription-level Contributor covers the control plane only,
+# so we need to add this data-plane role explicitly.
+echo "→  Granting Storage Blob Data Contributor to the current user..."
+USER_ID=$(az ad signed-in-user show --query id -o tsv)
+SA_ID=$(az storage account show --name "$SA" --resource-group "$RG" --query id -o tsv)
+az role assignment create \
+  --role "Storage Blob Data Contributor" \
+  --assignee "$USER_ID" \
+  --scope "$SA_ID" \
+  -o none 2>/dev/null || echo "✔  Role assignment already exists (or propagating)."
+
 echo ""
-echo "🎉 Backend ready. Next:"
+echo "🎉 Backend ready. Allow ~30 seconds for the role assignment to propagate."
+echo "   Next:"
 echo "   cd infra/terraform"
 echo "   terraform init"
