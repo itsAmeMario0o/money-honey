@@ -231,7 +231,7 @@ output "ingress_public_ip"    { value = null }  # populated in step 4
 | **OS-8** | Azure DevOps pipelines | Using GitHub Actions (CLAUDE.md line 193). |
 | **OS-9** | Diagnostic settings / Azure Monitor | Telemetry goes to Splunk; Azure Monitor is v2. |
 | **OS-10** | Backup / disaster recovery | Demo project. Rebuild from code in 15 min. |
-| **OS-11** | Cloudflare Tunnel + Access (zero-trust edge for chatbot and Splunk) | Deferred to v2 — see [`cloudflare-access-v2.md`](./cloudflare-access-v2.md). v1 validates the full stack publicly first, then v2 flips to Cloudflare-fronted with email-domain auth. |
+| **OS-11** | *(moved into v1)* Cloudflare Tunnel + Access is now part of v1 — see [`cloudflare-access-v1.md`](./cloudflare-access-v1.md). Splunk NSG drops `8000/tcp`; tunnel token secrets are added to Key Vault. Clickable URL routing is still open. |
 
 ---
 

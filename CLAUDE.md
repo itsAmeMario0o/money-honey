@@ -43,7 +43,7 @@ Money Honey: "The one you pay off every month, sweetheart. But since you asked, 
 
 ---
 
-## Security Architecture: Three Domains, Seven Layers
+## Security Architecture: Three Domains, Eight Layers
 
 ### Domain 1: Infrastructure Security
 
@@ -88,6 +88,9 @@ Webex notification on every build (pass or fail) via `chrivand/action-webex-js`.
 
 **Layer 7: Observability and audit (Splunk)**
 All security telemetry converges in Splunk Enterprise Free (500 MB/day). Fluent Bit ships Tetragon JSON logs (process events, file access, network connections, policy violations). OTel Collector scrapes Tetragon Prometheus metrics on port 2112 and forwards cluster-level metrics. Splunk provides the single pane for security audit: what ran, what connected, what was blocked, and when.
+
+**Layer 8: Identity-gated edge (Cloudflare Tunnel + Zero Trust)**
+Every public entry point to Money Honey sits behind Cloudflare. `cloudflared` runs on each origin (Splunk VM as systemd, chatbot as a Kubernetes Deployment) and dials outbound to Cloudflare's edge — origins have no public inbound app ports. Cloudflare Zero Trust Free covers two named tunnels and Access policies that can gate traffic by email domain (e.g. `*@cisco.com`, `*@gmail.com`). Tunnel connector tokens live in Azure Key Vault, never in code. Full spec: `docs/specs/cloudflare-access-v1.md`.
 
 ---
 
@@ -505,7 +508,6 @@ The docs site is a first-class deliverable, not an afterthought. Update docs whe
 
 ## Deferred to v2
 
-- **Cloudflare Tunnel + Access** — zero-trust public edge for chatbot and Splunk, email-domain allowlists, net ~$22/month savings. Full design in [`docs/specs/cloudflare-access-v2.md`](docs/specs/cloudflare-access-v2.md). Implement after v1 is running end-to-end.
 - Isovalent Enterprise (via Azure Marketplace)
 - ACNS (Hubble, FQDN filtering, L7 policies)
 - Trivy (container image CVE scanning)
