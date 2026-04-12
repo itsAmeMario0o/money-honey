@@ -8,7 +8,7 @@
 terraform {
   backend "azurerm" {
     resource_group_name  = "money-honey-tfstate-rg"
-    storage_account_name = "mhtfstate"
+    storage_account_name = "mhtfstatemjr26"
     container_name       = "tfstate"
     key                  = "money-honey.tfstate"
     use_azuread_auth     = true

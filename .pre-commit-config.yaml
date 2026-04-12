@@ -47,5 +47,7 @@ repos:
     rev: 24.10.0
     hooks:
       - id: black
-        language_version: python3.12
+        # No language_version pin — pre-commit uses whatever python3 is
+        # available. black reads target-version from app/pyproject.toml,
+        # which targets py312 regardless of the tool's own runtime.
         files: ^app/.*\.py$

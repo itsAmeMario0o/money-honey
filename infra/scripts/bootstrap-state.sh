@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Defaults match backend.tf — change here AND there if you rename anything.
 RG=${TFSTATE_RG:-money-honey-tfstate-rg}
-SA=${TFSTATE_SA:-mhtfstate}
+SA=${TFSTATE_SA:-mhtfstatemjr26}
 CONTAINER=${TFSTATE_CONTAINER:-tfstate}
 LOCATION=${TFSTATE_LOCATION:-eastus}
 
