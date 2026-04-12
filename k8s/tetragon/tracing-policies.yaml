@@ -1,0 +1,83 @@
+# Tetragon TracingPolicies — Layer 2 runtime enforcement.
+# Values are conservative; expand allowlists as the app evolves.
+# All policies are cluster-scoped so they apply to every pod on every node.
+---
+# Audit every exec() of a binary in money-honey pods. We deliberately
+# use audit (not kill) here for v1 so we can confirm the allowlist is
+# correct against real workload behaviour before switching to SIGKILL.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: process-exec-audit
+  namespace: money-honey
+spec:
+  kprobes:
+    - call: "sys_execve"
+      syscall: true
+      args:
+        - index: 0
+          type: "string"
+        - index: 1
+          type: "char **"
+      selectors:
+        # Allowlist of "normal" binaries for a FastAPI + React stack.
+        # Anything outside these logs as a warning to Splunk.
+        - matchArgs:
+            - index: 0
+              operator: "Postfix"
+              values:
+                - "/python"
+                - "/python3"
+                - "/python3.12"
+                - "/uvicorn"
+                - "/node"
+                - "/npm"
+                - "/nginx"
+                - "/caddy"
+                - "/sh"
+          matchActions:
+            - action: FollowFD
+              argFd: 0
+              argName: 1
+---
+# Audit every network connect() from money-honey pods. This gives us a
+# per-syscall record of where each pod actually talks to — independent
+# of the CNP-based allowlist. If a pod bypasses Cilium (unlikely) or
+# Cilium misconfigures, this catches it.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: network-connect-audit
+  namespace: money-honey
+spec:
+  kprobes:
+    - call: "tcp_connect"
+      syscall: false
+      args:
+        - index: 0
+          type: "sock"
+---
+# Audit every file open under /mnt/secrets/. Only the FastAPI pod and
+# cloudflared pod should read these; any other reader lights up.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: secrets-file-audit
+  namespace: money-honey
+spec:
+  kprobes:
+    - call: "security_file_permission"
+      syscall: false
+      args:
+        - index: 0
+          type: "file"
+        - index: 1
+          type: "int"
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/mnt/secrets/"
+          matchActions:
+            - action: Post

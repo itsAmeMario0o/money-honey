@@ -1,0 +1,100 @@
+# Allow cloudflared pods to reach Caddy on port 80.
+# Caddy is the single internal entry point — traffic enters via
+# Cloudflare Tunnel and lands here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-cloudflared-to-caddy
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: caddy
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: cloudflared
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+---
+# Allow Caddy to reach FastAPI (port 8000) and React (port 3000).
+# These are the only two upstreams Caddy proxies to.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-caddy-to-app
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: caddy
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: fastapi
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app: react
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Mirror ingress rules on FastAPI + React so Caddy can reach them.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-caddy-ingress-to-fastapi
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: fastapi
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: caddy
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-caddy-ingress-to-react
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: react
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: caddy
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP

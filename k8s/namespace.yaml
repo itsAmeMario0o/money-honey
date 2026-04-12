@@ -1,0 +1,11 @@
+# Dedicated namespace for Money Honey application workloads.
+# Observability (Fluent Bit, OTel Collector) lives in kube-system alongside Tetragon.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: money-honey
+  labels:
+    app: money-honey
+    part-of: money-honey
+    # Cilium requires this label for namespace-scoped CiliumNetworkPolicy matchLabels.
+    kubernetes.io/metadata.name: money-honey

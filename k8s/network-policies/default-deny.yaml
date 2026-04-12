@@ -1,0 +1,47 @@
+# Default-deny for every pod in money-honey.
+# Nothing in, nothing out until another CNP explicitly allows a path.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+  # An empty ingress/egress list does NOT mean allow-all — it means the
+  # policy matches no traffic, and Cilium's default-deny behaviour kicks
+  # in for endpoints selected by this policy. Below is the explicit form:
+  # an empty rules list under a policy that covers every endpoint.
+---
+# Always allow DNS egress (UDP 53 + TCP 53 to kube-dns) — otherwise nothing
+# in money-honey can resolve anything. This is the foundation policy that
+# other egress allows build on.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP

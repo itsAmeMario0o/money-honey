@@ -1,0 +1,73 @@
+# Egress allowlist for FastAPI.
+# Without ACNS we can't use FQDN-based policies. For Claude API we
+# permit egress to 443/TCP on any address — narrowing to Cloudflare IP
+# ranges that fronts api.anthropic.com is a future tightening.
+# The upstream Cilium maintainers recommend revisiting these CIDRs
+# periodically (Cloudflare publishes changes at
+# https://www.cloudflare.com/ips-v4).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-fastapi-egress
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: fastapi
+  egress:
+    # Claude API (api.anthropic.com) is served over Cloudflare's edge.
+    # Opening 443/TCP to world without ACNS L7; the Layer 2 (Tetragon)
+    # TracingPolicy gives us a record of every actual destination.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Splunk HEC on the private subnet (reachable via L3 through the VNet).
+    - toCIDR:
+        - 10.0.4.0/28
+      toPorts:
+        - ports:
+            - port: "8088"
+              protocol: TCP
+---
+# Egress allowlist for cloudflared pods. The tunnel dials Cloudflare's
+# global edge network over 443 and 7844 (QUIC). We open 443/TCP + 7844/UDP
+# to world and rely on Tetragon audit to see what actually connects.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-cloudflared-egress
+  namespace: money-honey
+  labels:
+    app: money-honey
+    component: network-policy
+    part-of: money-honey
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cloudflared
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "7844"
+              protocol: UDP
+            - port: "7844"
+              protocol: TCP
+    # cloudflared also talks to Caddy inside the cluster.
+    - toEndpoints:
+        - matchLabels:
+            app: caddy
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
