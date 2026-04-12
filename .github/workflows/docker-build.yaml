@@ -1,5 +1,9 @@
-# Build + push app and frontend images to GHCR.
+# Build + scan + push app and frontend images to GHCR.
 # Runs on every push to main and every PR targeting main.
+#
+# Flow per service: build locally (load=true, no push) -> Trivy image
+# scan -> on pass, push to GHCR. Fails HIGH/CRITICAL vulns before the
+# image is ever visible in the registry.
 #
 # Auth: uses the built-in GITHUB_TOKEN with `packages: write` permission.
 # No personal access tokens. No long-lived secrets.
@@ -28,7 +32,7 @@ env:
 
 jobs:
   build-backend:
-    name: Build app (FastAPI)
+    name: Build + scan + push app (FastAPI)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,20 +48,43 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build + push backend image
+      # Stage 1: build locally, load into Docker daemon (no push yet).
+      - name: Build backend image (local only)
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          file: app/Dockerfile
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: money-honey-app:ci-scan
+
+      # Stage 2: scan the locally-built image. Fails HIGH + CRITICAL.
+      - name: Trivy — scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: money-honey-app:ci-scan
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      # Stage 3: if scan passed, re-tag + push to GHCR.
+      - name: Push backend image (post-scan)
         uses: docker/build-push-action@v6
         with:
           context: app
           file: app/Dockerfile
           push: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/money-honey-app:sha-${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/money-honey-app:${{ github.ref_name == 'main' && 'latest' || 'pr' }}
 
   build-frontend:
-    name: Build frontend (React)
+    name: Build + scan + push frontend (React)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -73,14 +100,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build + push frontend image
+      - name: Build frontend image (local only)
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: money-honey-frontend:ci-scan
+
+      - name: Trivy — scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: money-honey-frontend:ci-scan
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Push frontend image (post-scan)
         uses: docker/build-push-action@v6
         with:
           context: frontend
           file: frontend/Dockerfile
           push: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/money-honey-frontend:sha-${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/money-honey-frontend:${{ github.ref_name == 'main' && 'latest' || 'pr' }}

@@ -94,3 +94,39 @@ jobs:
         with:
           working_directory: infra/terraform
           soft_fail: false
+
+  trivy-fs:
+    name: Trivy — filesystem / dependency scan (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan app/ and frontend/ dependencies
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: "."
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          skip-dirs: "node_modules,.venv,.terraform,infra/private_key"
+
+  trivy-k8s:
+    name: Trivy — k8s manifest scan (advisory, non-blocking for now)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan k8s/ manifests for misconfigurations
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: k8s
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          # Advisory only: this job is continue-on-error at the job
+          # level too, so findings surface in logs without blocking
+          # PRs. Flip to required after a baseline pass is established.
