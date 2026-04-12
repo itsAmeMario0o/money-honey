@@ -7,6 +7,9 @@
 # Required env vars:
 #   VM_IP                 — public IP of the Splunk VM (from terraform output)
 #   SPLUNK_ADMIN_PASSWORD — strong password for the Splunk admin account
+#   CLOUDFLARED_TOKEN     — Cloudflare Tunnel connector token for the
+#                           money-honey-splunk tunnel (retrieve from
+#                           Key Vault: `az keyvault secret show ...`)
 #
 # Optional:
 #   KEY_FILE       (default: ../private_key/splunk.pem)
@@ -20,6 +23,7 @@ KEY_FILE=${KEY_FILE:-"$(dirname "$0")/../private_key/splunk.pem"}
 VM_USER=${VM_USER:-azureuser}
 VM_IP=${VM_IP:?set VM_IP (run: terraform output -raw splunk_vm_public_ip)}
 PASSWORD=${SPLUNK_ADMIN_PASSWORD:?set SPLUNK_ADMIN_PASSWORD to a strong password}
+CF_TOKEN=${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN (from: az keyvault secret show --vault-name <kv> --name cloudflare-tunnel-splunk-token --query value -o tsv)}
 
 SPLUNK_VERSION=${SPLUNK_VERSION:-9.3.2}
 SPLUNK_BUILD=${SPLUNK_BUILD:-d8bb32809498}
@@ -63,12 +67,34 @@ sudo /opt/splunk/bin/splunk http-event-collector enable \
   -auth "admin:${PASSWORD}" \
   -uri https://127.0.0.1:8089 || true
 
-echo "✅ Splunk ready on this VM."
+# --- Cloudflare Tunnel (Layer 8) ---
+# The tunnel token was passed in via env var CLOUDFLARED_TOKEN. Install
+# the official Debian package from GitHub releases and register it as a
+# systemd service. The service dials outbound to Cloudflare; no inbound
+# port is opened.
+if systemctl is-active --quiet cloudflared 2>/dev/null; then
+  echo "✔  cloudflared already running — skipping install."
+else
+  echo "→  Installing cloudflared (Cloudflare Tunnel connector)..."
+  curl -sSL -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+  sudo dpkg -i /tmp/cloudflared.deb
+  rm -f /tmp/cloudflared.deb
+  sudo cloudflared service install "${CF_TOKEN}"
+fi
+
+sudo systemctl enable --now cloudflared
+
+echo "✅ Splunk + cloudflared ready on this VM."
 REMOTE_SCRIPT
 
 echo ""
-echo "🎉 Access the Splunk UI:"
-echo "   http://${VM_IP}:8000   (username: admin)"
+echo "🎉 Local (private-IP) Splunk UI reachable from the VM only:"
+echo "   http://<private-ip>:8000   (admin-only; not exposed publicly)"
+echo ""
+echo "🔐 Public access lives behind the Cloudflare Tunnel:"
+echo "   Check the Zero Trust dashboard → Networks → Tunnels → money-honey-splunk"
+echo "   Once HEALTHY, configure the Public Hostname (or Access Self-Hosted"
+echo "   Application) to point at http://localhost:8000."
 echo ""
 echo "⚠️  Next step: in Splunk UI, create a HEC token for the AKS Fluent Bit"
 echo "   pods and store it in Key Vault as 'splunk-hec-token'."
