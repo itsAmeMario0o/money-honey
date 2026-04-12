@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from personality import SYSTEM_PROMPT
 from rag import build_index, retrieve_context
@@ -50,7 +50,11 @@ app.add_middleware(
 )
 
 vector_index = build_index()
-llm = ChatAnthropic(model=MODEL_NAME, api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+llm = (
+    ChatAnthropic(model_name=MODEL_NAME, api_key=SecretStr(ANTHROPIC_API_KEY))
+    if ANTHROPIC_API_KEY
+    else None
+)
 
 
 @app.get("/api/health")
@@ -77,4 +81,6 @@ def chat(request: ChatRequest) -> ChatResponse:
         HumanMessage(content=request.message),
     ]
     answer = llm.invoke(messages)
-    return ChatResponse(reply=answer.content, sources_used=4)
+    # answer.content may be str or list[str|dict]; coerce to a single string.
+    reply_text = answer.content if isinstance(answer.content, str) else str(answer.content)
+    return ChatResponse(reply=reply_text, sources_used=4)
