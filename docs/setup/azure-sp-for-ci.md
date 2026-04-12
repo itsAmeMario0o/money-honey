@@ -89,6 +89,12 @@ Open **https://github.com/itsAmeMario0o/money-honey/settings/secrets/actions** a
 | `AZURE_TENANT_ID` | from step 5 |
 | `AZURE_SUBSCRIPTION_ID` | from step 5 |
 
+Cisco AIBOM classifier secret (AIBOM tool's internal LLM; not the chatbot's LLM):
+
+| Secret | Value |
+|---|---|
+| `OPENAI_API_KEY` | From [platform.openai.com/api-keys](https://platform.openai.com/api-keys). Used **only** by `aibom.yaml`'s Cisco AIBOM classifier. The chatbot's runtime LLM remains Anthropic Claude. `aibom.yaml` gracefully skips when this secret is absent. |
+
 Optional Webex notification secrets (workflows gracefully skip if absent):
 
 | Secret | Value |

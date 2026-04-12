@@ -1,13 +1,21 @@
-# AI supply-chain scan — produces a CycloneDX SBOM for each service.
+# AI Bill of Materials via Cisco AI Defense `cisco-aibom` CLI.
 #
-# Cisco's public AIBOM repo (cisco-ai-defense/aibom) is a spec/schema
-# rather than a runnable CLI, so our original `python -m aibom` approach
-# didn't work. This workflow stands in with syft via anchore/sbom-action:
-# same outcome (machine-readable manifest of every dependency including
-# AI/ML libs), in an industry-standard CycloneDX format. When the Cisco
-# CLI ships, swap the two steps below for the vendor tool.
+# The tool inventories every AI asset in the repo: models, agents, tools,
+# MCP servers/clients, embeddings, vector stores, datasets, prompts,
+# guardrails, secrets, dependencies. Three-tier detection: deterministic
+# scanner + cross-reference resolution + agentic LLM classifier.
+#
+# `--llm-model` is required. The AIBOM tool uses an LLM INTERNALLY as a
+# classifier (eliminates false positives, enriches findings). This is a
+# scoped, conscious exception to the project's "only Anthropic" principle:
+# the tool-internal LLM is NOT the chatbot's LLM. Runtime app traffic
+# stays Anthropic-only. See project_design_decisions.md for the rationale.
+#
+# Required secret: OPENAI_API_KEY (set at repo Settings -> Secrets -> Actions).
+# If unset, the job runs but skips the scan with a clear notice rather
+# than failing CI — flip the fail-closed behaviour once the secret lands.
 
-name: AI BOM (AI supply chain)
+name: AIBOM (Cisco AI Defense)
 
 on:
   pull_request:
@@ -16,60 +24,98 @@ on:
       - app/**
       - frontend/**
       - docs/specs/**
+  workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  sbom:
-    name: Generate CycloneDX SBOM (app + frontend)
+  aibom:
+    name: cisco-aibom analyze
     runs-on: ubuntu-latest
+    # Advisory until the operator provisions the OpenAI secret and the
+    # scan has been validated against this repo's real output.
+    continue-on-error: true
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Default model for the AIBOM tool's internal classifier. Cheap,
+      # widely available, and accurate enough for component classification.
+      AIBOM_LLM_MODEL: gpt-4o-mini
+      AIBOM_LLM_PROVIDER: openai
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate SBOM for app (Python backend)
-        uses: anchore/sbom-action@v0.17.9
-        with:
-          path: app
-          format: cyclonedx-json
-          output-file: sbom-app.cdx.json
-          upload-artifact: false
+      - name: Skip notice if OPENAI_API_KEY is unset
+        if: env.OPENAI_API_KEY == ''
+        run: |
+          echo "::warning title=AIBOM skipped::OPENAI_API_KEY secret is not set; Cisco AI Defense AIBOM classifier requires an LLM."
+          echo "Set it at repo Settings -> Secrets and variables -> Actions."
+          exit 0
 
-      - name: Generate SBOM for frontend (Node)
-        uses: anchore/sbom-action@v0.17.9
+      - name: Install uv
+        if: env.OPENAI_API_KEY != ''
+        uses: astral-sh/setup-uv@v4
         with:
-          path: frontend
-          format: cyclonedx-json
-          output-file: sbom-frontend.cdx.json
-          upload-artifact: false
+          version: "0.5.11"
+          enable-cache: true
 
-      - name: Highlight AI / ML components
-        # Simple grep for well-known AI/ML library names across both
-        # SBOMs; useful in PR summaries even before any formal policy
-        # enforcement lands.
+      - name: Install cisco-aibom (with agentic + OpenAI extras)
+        if: env.OPENAI_API_KEY != ''
+        run: |
+          uv tool install --python 3.13 "cisco-aibom[agentic,llm-openai]"
+          uv tool run cisco-aibom --version
+
+      - name: AIBOM — analyze app (backend)
+        if: env.OPENAI_API_KEY != ''
+        env:
+          AIBOM_LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          uv tool run cisco-aibom analyze app \
+            --output-format json \
+            --output aibom-app.json \
+            --llm-model "$AIBOM_LLM_MODEL" \
+            --llm-provider "$AIBOM_LLM_PROVIDER"
+
+      - name: AIBOM — analyze frontend
+        if: env.OPENAI_API_KEY != ''
+        env:
+          AIBOM_LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          uv tool run cisco-aibom analyze frontend \
+            --output-format json \
+            --output aibom-frontend.json \
+            --llm-model "$AIBOM_LLM_MODEL" \
+            --llm-provider "$AIBOM_LLM_PROVIDER"
+
+      - name: Summarise detected AI components
+        if: env.OPENAI_API_KEY != ''
         run: |
           set -eu
-          echo "## 🤖 AI/ML components detected" > aibom-summary.md
-          echo "" >> aibom-summary.md
-          echo '```' >> aibom-summary.md
-          if grep -hE "(langchain|anthropic|sentence-transformers|faiss|transformers|openai|huggingface|torch|numpy)" \
-                sbom-app.cdx.json sbom-frontend.cdx.json 2>/dev/null \
-                | sort -u | head -50 >> aibom-summary.md; then
-            :
-          else
-            echo "(none detected)" >> aibom-summary.md
-          fi
-          echo '```' >> aibom-summary.md
+          {
+            echo "## 🤖 Cisco AI Defense AIBOM summary"
+            echo ""
+            for f in aibom-app.json aibom-frontend.json; do
+              if [ -f "$f" ]; then
+                echo "### $f"
+                jq -r '.components[]? | "- \(.type): \(.name // .identifier // "unknown")"' "$f" 2>/dev/null \
+                  | sort -u | head -40 \
+                  || echo "(no components detected or jq parse failed)"
+                echo ""
+              fi
+            done
+          } > aibom-summary.md
           cat aibom-summary.md
 
-      - name: Upload SBOMs as artifacts
+      - name: Upload AIBOM reports
+        if: env.OPENAI_API_KEY != '' && always()
         uses: actions/upload-artifact@v4
         with:
-          name: aibom-sboms
+          name: aibom-reports
           path: |
-            sbom-app.cdx.json
-            sbom-frontend.cdx.json
+            aibom-app.json
+            aibom-frontend.json
             aibom-summary.md
+          if-no-files-found: ignore
           retention-days: 30
