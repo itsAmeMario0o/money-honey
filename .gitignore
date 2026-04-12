@@ -62,3 +62,9 @@ infra/private_key/*
 
 # Terraform local plan file from tf-plan.sh wrapper
 infra/terraform/tfplan
+
+# Bootstrap module uses local state — keep it out of git
+infra/terraform-bootstrap/terraform.tfstate
+infra/terraform-bootstrap/terraform.tfstate.backup
+infra/terraform-bootstrap/.terraform/
+infra/terraform-bootstrap/.terraform.lock.hcl

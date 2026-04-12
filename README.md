@@ -79,11 +79,13 @@ Drop your PDFs into `app/knowledge_base/pdfs/` — they're gitignored so copyrig
 ## 🏗️ Deploy to Azure (when step 4 lands)
 
 ```bash
-# One-time: create the Terraform state backend
-infra/scripts/bootstrap-state.sh
+# One-time: create the Terraform state backend (local-state bootstrap module)
+cd infra/terraform-bootstrap
+terraform init
+terraform apply
 
-# Plan + apply
-cd infra/terraform
+# Then the main stack (remote state points at the SA created above)
+cd ../terraform
 terraform init
 terraform plan -out=tfplan
 terraform apply tfplan

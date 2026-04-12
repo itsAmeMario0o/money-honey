@@ -37,7 +37,7 @@ CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 |---|---|
 | **FR-1** | Terraform MUST read the subscription from the operator's active `az login` session (or `ARM_SUBSCRIPTION_ID` env var). Subscription ID MUST NOT appear in any file under version control. |
 | **FR-2** | All resources MUST live in a single resource group named `money-honey-rg` in region `eastus`. |
-| **FR-3** | Terraform state MUST be stored in an Azure Storage Account container (remote backend). The storage account itself MUST be created out-of-band via `infra/scripts/bootstrap-state.sh` (chicken-and-egg problem). |
+| **FR-3** | Terraform state MUST be stored in an Azure Storage Account container (remote backend). The storage account itself MUST be created by a separate `infra/terraform-bootstrap/` module that uses LOCAL state (resolves the chicken-and-egg). The bootstrap module also grants the signed-in operator `Storage Blob Data Contributor` on the state SA. |
 | **FR-4** | The state backend MUST have blob versioning and soft-delete enabled. |
 
 ### AKS cluster
