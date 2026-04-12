@@ -23,7 +23,6 @@ from rag import build_index, retrieve_context
 load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 MODEL_NAME = "claude-haiku-4-5-20251001"
 
@@ -51,7 +50,7 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-vector_index = build_index(OPENAI_API_KEY) if OPENAI_API_KEY else None
+vector_index = build_index()
 llm = ChatAnthropic(model=MODEL_NAME, api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 
 

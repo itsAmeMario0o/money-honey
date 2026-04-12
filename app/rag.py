@@ -2,9 +2,12 @@
 
 The design is deliberately simple. On startup we read every PDF in
 KNOWLEDGE_BASE_DIR, split each document into chunks, and embed them with
-OpenAI's text-embedding-3-small model. The chunks live in an in-memory
+a local sentence-transformers model. The chunks live in an in-memory
 FAISS index. Each chat request runs a similarity search and returns the
 top matches as context for the LLM.
+
+Embeddings run in-process — no external API, no API key. This reduces
+cost and egress surface area (one less FQDN for Layer 1 to allow).
 """
 
 from __future__ import annotations
@@ -14,10 +17,11 @@ from typing import List
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 KNOWLEDGE_BASE_DIR = Path(__file__).parent / "knowledge_base" / "pdfs"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
 TOP_K = 4
@@ -41,7 +45,7 @@ def split_documents(documents: List) -> List:
     return splitter.split_documents(documents)
 
 
-def build_index(openai_api_key: str) -> FAISS | None:
+def build_index() -> FAISS | None:
     """Build a FAISS index from the PDF knowledge base.
 
     Returns None if there are no PDFs yet, so the app can still start.
@@ -50,10 +54,7 @@ def build_index(openai_api_key: str) -> FAISS | None:
     if not documents:
         return None
     chunks = split_documents(documents)
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small",
-        api_key=openai_api_key,
-    )
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
     return FAISS.from_documents(chunks, embeddings)
 
 
