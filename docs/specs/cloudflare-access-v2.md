@@ -6,10 +6,36 @@
 |---|---|
 | **Feature** | Zero-trust public edge for Money Honey chatbot and Splunk dashboard |
 | **Author** | Mario Ruiz + Claude Code |
-| **Status** | 📝 Planned — implement after step 3 (infra) + step 4 (k8s) land and are running |
+| **Status** | ⏸️ **Paused — resume after step 4 (k8s manifests)** |
+| **DNS approach (decided)** | **Option 3** — use free `*.trycloudflare.com` hostnames for v1. No DNS delegation, no Squarespace changes, no new domain. Custom domain (`money-honey.mariojruiz.com`) deferred to a later pass when DNS is migrated (see §"Resume Point" below). |
 | **Reviewers** | Mario Ruiz |
 | **Skills to use** | `spec-driven-workflow`, `cloud-security`, `senior-secops`, `terraform-patterns` |
 | **Depends on** | `docs/specs/infra-v1.md`, `docs/specs/chatbot-v1.md` |
+
+---
+
+## ⏸️ Resume Point (last updated mid-step 3)
+
+**What's decided:**
+- Cloudflare Tunnel + Access **is part of v1** (not v2 as originally written — doc name is a legacy artifact).
+- DNS approach: **Option 3** — `*.trycloudflare.com` hostnames. No Squarespace changes, no custom domain in v1.
+- Chatbot URL will be something like `https://money-honey.trycloudflare.com`.
+- Splunk URL will be something like `https://splunk-money-honey.trycloudflare.com`.
+- Cloudflare Access still enforces email-domain allowlist (`cisco.com`, `gmail.com`, etc.) on both hostnames.
+
+**What's done:** nothing in code yet — infra step 3 (commits through `1e6b566`) does NOT include Cloudflare. Splunk VM still has a public IP; AKS will get a public LB when step 4 lands.
+
+**What to do on resume (picked up in this order):**
+1. Operator creates a Cloudflare account (if not already) and an API token with Tunnel + Access scopes. No DNS setup needed for Option 3.
+2. Rewrite this spec: drop zone-delegation FRs (FR-1, FR-2), drop `cloudflare_zone` / `cloudflare_record` resources, keep tunnels + Access apps, point the Access apps at tunnel-generated `trycloudflare.com` hostnames.
+3. Add `cloudflare.tf` to `infra/terraform/` with: provider, 2 tunnels, 2 Access applications, 2 Access policies.
+4. Remove `azurerm_public_ip.splunk` and its NIC binding + NSG rule for 8000/tcp.
+5. Add 2 new Key Vault secret shells: `cloudflare-api-token`, `cloudflare-tunnel-chatbot-token`, `cloudflare-tunnel-splunk-token`.
+6. Update `install-splunk.sh` to install `cloudflared` as a systemd unit on the VM.
+7. In step 4 (k8s), change Caddy Service from `LoadBalancer` to `ClusterIP` and add a `cloudflared` Deployment for the chatbot tunnel.
+8. Update CLAUDE.md: move this from "Deferred to v2" into the layer list (becomes Layer 8); update tech stack table.
+
+**Trade-off accepted for v1:** ugly URLs (`trycloudflare.com`) instead of `money-honey.mariojruiz.com`. Swap to custom DNS later when the domain is moved to Cloudflare DNS or a new Cloudflare-registered domain is purchased.
 
 ---
 
