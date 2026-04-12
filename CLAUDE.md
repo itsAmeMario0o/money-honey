@@ -145,6 +145,25 @@ Do not install new dependencies without asking first.
 
 Do not modify this file (CLAUDE.md) or anything in `.claude/` without explicit permission.
 
+### Skill usage (mandatory)
+
+Before writing any code, infra, CI/CD workflow, doc, or review, consult the matching skill from the "Claude Code Skills" table below. Load the skill's `SKILL.md` from the plugin cache and apply its guidance. State in your response which skill you used and why.
+
+Rules:
+- `spec-driven-workflow` runs first for every new feature or component. No code before an approved spec at `docs/specs/<feature>.md`.
+- Backend code (`app/`) uses `senior-backend` + `rag-architect` (for RAG-touching files).
+- Frontend code (`frontend/`) uses `senior-frontend`.
+- Terraform (`infra/terraform/`) uses `terraform-patterns` + `azure-cloud-architect`.
+- Kubernetes manifests (`k8s/`) use `senior-secops` + `helm-chart-builder` (for Helm releases) + `secrets-vault-manager` (for Key Vault / CSI).
+- Dockerfiles use `docker-development`.
+- GitHub Actions (`.github/workflows/`) use `ci-cd-pipeline-builder`.
+- Observability configs (`k8s/fluent-bit/`, `k8s/otel/`, Splunk) use `observability-designer`.
+- Debugging anything broken uses `focused-fix`. Do not blind-patch.
+- Reviewing changes uses `code-reviewer` + `adversarial-reviewer` (for AI / PDF changes).
+- Incident or alert playbooks use `incident-response`.
+
+If no skill maps cleanly to the task, say so explicitly and ask before proceeding freeform.
+
 ### Code simplicity
 
 All code in this repo should read like it was written for a college freshman. Short functions. Clear variable names. Comments that explain why, not what. No clever tricks, no premature abstractions, no deeply nested logic.
