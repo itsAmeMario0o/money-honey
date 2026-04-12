@@ -51,7 +51,12 @@ resource "azurerm_kubernetes_cluster" "money_honey" {
     azure_rbac_enabled = true
     tenant_id          = data.azurerm_client_config.current.tenant_id
   }
-  local_account_disabled = true
+  // v1 demo: admin kubeconfig kept enabled so Terraform's Helm provider
+  // can authenticate via kube_admin_config. Azure AD + Azure RBAC for
+  // Kubernetes remains the primary identity path for human users.
+  // Production path: set local_account_disabled = true and use kubelogin
+  // exec plugin in providers.tf to authenticate Terraform via az login.
+  local_account_disabled            = false
   role_based_access_control_enabled = true
 
   // CSI Secret Store Driver add-on. Mounts Key Vault secrets as volumes.
