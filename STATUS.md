@@ -80,7 +80,14 @@ Four workflows committed alongside the existing `quality.yaml`:
 5. Apply the app, observability, and cloudflared manifests.
 6. Configure the Public Hostname on each Cloudflare tunnel (dashboard step).
 
-## 🩺 Diagnostics captured this block
+## 🔬 Trivy baseline (local run before merging the workflow)
+
+| Scan | Result |
+|---|---|
+| `trivy fs` (dep scan) | ✅ **0 findings** after bumping `langchain-community` 0.3.5 → 0.3.27 (CVE-2025-6984 insecure XML parsing) and `black` 24.10.0 → 26.3.1 (CVE-2026-32274 arbitrary file writes). Would have blocked CI otherwise. |
+| `trivy config k8s/` (manifest scan, advisory) | ⚠️ 1 HIGH: `otel/configmap.yaml` has `token` as a YAML key (OTel exporter's required field name). Actual value is `${SPLUNK_HEC_TOKEN}` template placeholder substituted from env at runtime. Accepted as advisory — not a real secret leak. |
+
+## 🩺 Diagnostics captured
 
 - Cilium connectivity test: 54/56 tests passed. 2 failures both are test-harness issues (encryption-test N/A; `/bin/sh` missing in distroless container). Actual networking is healthy.
 - Azure vCPU quota for `standardBasv2Family` was exhausted; pivoted to `standardBSFamily` (Standard_B2s). Documented in `project_design_decisions.md` memory.
