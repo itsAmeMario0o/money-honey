@@ -505,6 +505,7 @@ The docs site is a first-class deliverable, not an afterthought. Update docs whe
 
 ## Deferred to v2
 
+- **Cloudflare Tunnel + Access** — zero-trust public edge for chatbot and Splunk, email-domain allowlists, net ~$22/month savings. Full design in [`docs/specs/cloudflare-access-v2.md`](docs/specs/cloudflare-access-v2.md). Implement after v1 is running end-to-end.
 - Isovalent Enterprise (via Azure Marketplace)
 - ACNS (Hubble, FQDN filtering, L7 policies)
 - Trivy (container image CVE scanning)
