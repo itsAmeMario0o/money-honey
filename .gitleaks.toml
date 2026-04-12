@@ -1,0 +1,33 @@
+# Gitleaks config for Money Honey.
+# Extends the default ruleset with Azure-specific checks.
+
+title = "Money Honey gitleaks config"
+
+[extend]
+useDefault = true
+
+# Custom rule: flag any UUID that appears near the word "subscription"
+# or "tenant" in .tf, .tfvars, .md, .yaml files. This catches the exact
+# class of mistake we hit in commit f03f7b5 (now rewritten as 91c2f9b).
+[[rules]]
+id = "azure-subscription-id"
+description = "Azure subscription or tenant ID hardcoded near infra config"
+regex = '''(?i)(subscription|tenant)[^\n]{0,40}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+tags = ["azure", "identifier", "leak-prevention"]
+
+[[rules]]
+id = "azure-subscription-id-reverse"
+description = "UUID followed by the word subscription/tenant"
+regex = '''[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[^\n]{0,40}(?i)(subscription|tenant)'''
+tags = ["azure", "identifier", "leak-prevention"]
+
+# Allowlist: example placeholders that look like UUIDs but are safe.
+[allowlist]
+regexes = [
+  '''00000000-0000-0000-0000-000000000000''',    # null UUID
+  '''REDACTED-SUBSCRIPTION-ID''',                # our post-scrub marker
+]
+paths = [
+  '''\.pre-commit-config\.yaml''',               # this config itself
+  '''\.gitleaks\.toml''',                        # and this one
+]

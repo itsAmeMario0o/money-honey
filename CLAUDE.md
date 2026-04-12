@@ -153,7 +153,7 @@ Rules:
 - `spec-driven-workflow` runs first for every new feature or component. No code before an approved spec at `docs/specs/<feature>.md`.
 - Backend code (`app/`) uses `senior-backend` + `rag-architect` (for RAG-touching files).
 - Frontend code (`frontend/`) uses `senior-frontend`.
-- Terraform (`infra/terraform/`) uses `terraform-patterns` + `azure-cloud-architect`.
+- Terraform (`infra/terraform/`) uses `terraform-patterns` + `azure-cloud-architect` + `cloud-security` + `senior-secops`. The security pair is non-optional: before staging any `.tf` file, run through the "No hardcoded values" and "No secrets in code" checklists from `terraform-patterns` §Security and `cloud-security`. Running `pre-commit run --all-files` MUST pass before `git commit`.
 - Kubernetes manifests (`k8s/`) use `senior-secops` + `helm-chart-builder` (for Helm releases) + `secrets-vault-manager` (for Key Vault / CSI).
 - Dockerfiles use `docker-development`.
 - GitHub Actions (`.github/workflows/`) use `ci-cd-pipeline-builder`.
@@ -163,6 +163,22 @@ Rules:
 - Incident or alert playbooks use `incident-response`.
 
 If no skill maps cleanly to the task, say so explicitly and ask before proceeding freeform.
+
+### Pre-commit guardrails (automated)
+
+Install once per clone:
+
+```bash
+brew install pre-commit
+pre-commit install
+```
+
+After this, every `git commit` runs:
+- `gitleaks` with the custom `.gitleaks.toml` rules (catches Azure subscription/tenant IDs, API keys, tokens)
+- `tfsec` on Terraform files
+- Private-key detection, large-file block, YAML/JSON syntax, trailing whitespace
+
+The hook MUST pass locally before commit. CI runs the same checks in step 5 as a second line of defense. **GitHub push protection** (repo Settings → Code security → Secret scanning → Push protection) is enabled as the third line.
 
 ### Code simplicity
 
