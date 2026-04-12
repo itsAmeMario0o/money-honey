@@ -13,7 +13,7 @@ resource "azurerm_key_vault" "money_honey" {
 
   // Use access policies (not RBAC) for simpler demo setup. In v2 we would
   // switch to RBAC + role assignments per senior-secops best practice.
-  enable_rbac_authorization = false
+  rbac_authorization_enabled = false
 
   // Hard safety: deletions are recoverable, purges are blocked.
   soft_delete_retention_days = 7
