@@ -8,7 +8,6 @@ Exposes two endpoints:
 from __future__ import annotations
 
 import os
-from typing import List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -73,7 +72,7 @@ def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=503, detail="Knowledge base is empty.")
 
     context = retrieve_context(vector_index, request.message)
-    messages: List = [
+    messages: list = [
         SystemMessage(content=SYSTEM_PROMPT.format(context=context)),
         HumanMessage(content=request.message),
     ]

@@ -1,16 +1,16 @@
 # Pre-commit hooks for Money Honey.
 #
 # Install once per clone:
-#   brew install pre-commit      # macOS, or pipx install pre-commit
-#   pre-commit install           # wires the hook into .git/hooks/pre-commit
+#   brew install pre-commit
+#   pre-commit install
 #
-# After that, every `git commit` runs these checks on staged files.
-# The hooks BLOCK the commit if any secret pattern or Terraform issue
-# is found — catching the class of mistake where a subscription ID,
-# API key, or insecure default slips in.
+# Every `git commit` runs these on staged files.
+# Frontend lint / typecheck / tests run in the CI workflow
+# `.github/workflows/quality.yaml`, not here — they require node_modules
+# which we don't want pre-commit to manage.
 
 repos:
-  # Basic hygiene
+  # ---- Basic hygiene ----
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -21,17 +21,31 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files
-        args: ["--maxkb=5120"]  # 5 MB — blocks accidental model / PDF commits
+        args: ["--maxkb=5120"]
 
-  # Gitleaks — secret scanning for API keys, tokens, Azure IDs, etc.
+  # ---- Secret + IaC scanning ----
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2
     hooks:
       - id: gitleaks
 
-  # tfsec — Terraform security scanner
   - repo: https://github.com/aquasecurity/tfsec
     rev: v1.28.11
     hooks:
       - id: tfsec
         args: ["--soft-fail=false"]
+
+  # ---- Python (app/) ----
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: ^app/.*\.py$
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3.12
+        files: ^app/.*\.py$

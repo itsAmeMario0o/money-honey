@@ -1,0 +1,48 @@
+# Python tooling config for the Money Honey backend.
+# One file, four tools: black, ruff, mypy, pytest.
+
+[project]
+name = "money-honey-app"
+version = "0.1.0"
+description = "FastAPI backend for the Money Honey chatbot"
+requires-python = ">=3.12"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Start conservative. Enable more rules once the baseline is clean.
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # isort (import ordering)
+  "B",    # bugbear
+  "UP",   # pyupgrade
+  "SIM",  # simplify
+]
+ignore = [
+  "E501",  # line-too-long — black handles this
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true    # langchain, faiss etc. lack full stubs
+warn_unused_ignores = true
+warn_return_any = false
+disallow_untyped_defs = false    # relaxed — only public functions need hints
+strict_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-ra --strict-markers"

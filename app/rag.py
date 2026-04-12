@@ -13,7 +13,6 @@ cost and egress surface area (one less FQDN for Layer 1 to allow).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
@@ -27,7 +26,7 @@ CHUNK_OVERLAP = 150
 TOP_K = 4
 
 
-def load_pdf_documents(pdf_dir: Path) -> List:
+def load_pdf_documents(pdf_dir: Path) -> list:
     """Load every PDF in pdf_dir and return a list of LangChain Documents."""
     documents = []
     for pdf_path in sorted(pdf_dir.glob("*.pdf")):
@@ -36,7 +35,7 @@ def load_pdf_documents(pdf_dir: Path) -> List:
     return documents
 
 
-def split_documents(documents: List) -> List:
+def split_documents(documents: list) -> list:
     """Split documents into overlapping chunks the embedding model can handle."""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
