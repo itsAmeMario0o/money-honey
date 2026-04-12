@@ -5,7 +5,7 @@ python-dotenv==1.0.1
 langchain==0.3.7
 langchain-anthropic==0.3.0
 langchain-huggingface==0.1.2
-langchain-community==0.3.5
+langchain-community==0.3.27
 sentence-transformers==3.3.1
 faiss-cpu==1.9.0
 pypdf==5.1.0
@@ -15,7 +15,7 @@ pypdf==5.1.0
 # The Dockerfile uses pip with --no-deps filtering via a constraints
 # pattern later if needed; for now the deploy image installs everything
 # — the size hit is small.
-black==24.10.0
+black==26.3.1
 ruff==0.8.2
 mypy==1.13.0
 pytest==8.3.4
