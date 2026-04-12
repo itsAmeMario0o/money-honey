@@ -18,8 +18,10 @@ provider "azurerm" {
 
 // Helm talks to the AKS cluster we create in aks.tf. The host and
 // credentials come from the cluster's kube_admin_config output.
+// Using the attribute form of `kubernetes` (helm provider 2.12+),
+// which is also the only form helm provider 3.x accepts.
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = azurerm_kubernetes_cluster.money_honey.kube_admin_config[0].host
     client_certificate     = base64decode(azurerm_kubernetes_cluster.money_honey.kube_admin_config[0].client_certificate)
     client_key             = base64decode(azurerm_kubernetes_cluster.money_honey.kube_admin_config[0].client_key)
