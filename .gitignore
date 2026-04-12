@@ -54,3 +54,11 @@ splunk/var/
 
 # Knowledge base PDFs (copyrighted material, load at runtime or via volume mount)
 app/knowledge_base/pdfs/*.pdf
+
+# Terraform-generated SSH private key for the Splunk VM.
+# Folder is tracked via .gitkeep; the actual splunk.pem is never committed.
+infra/private_key/*
+!infra/private_key/.gitkeep
+
+# Terraform local plan file from tf-plan.sh wrapper
+infra/terraform/tfplan
