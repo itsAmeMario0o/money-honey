@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+knowledge_base/pdfs/*.pdf
+*.faiss
+*.pkl
+.pytest_cache/
