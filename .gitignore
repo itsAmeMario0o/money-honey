@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# Node / React
+node_modules/
+frontend/build/
+frontend/dist/
+.next/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+.terraform.lock.hcl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (never commit these)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Splunk
+splunk/var/
+
+# FAISS local persistence
+*.faiss
+*.pkl
+
+# Claude Code
+.claude/settings.json
+
+# Knowledge base PDFs (copyrighted material, load at runtime or via volume mount)
+app/knowledge_base/pdfs/*.pdf

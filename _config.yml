@@ -1,0 +1,13 @@
+title: Money Honey
+description: Layered Security Architecture for an AI Chatbot on AKS
+theme: jekyll-theme-merlot
+url: https://itsAmeMario0o.github.io
+baseurl: /money-honey
+plugins:
+  - jekyll-seo-tag
+
+defaults:
+  - scope:
+      path: "docs"
+    values:
+      layout: default
