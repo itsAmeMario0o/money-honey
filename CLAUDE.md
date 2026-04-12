@@ -12,7 +12,7 @@ The real demonstration is a defense-in-depth model for AI applications, inspired
 
 The core principle: assume compromise is possible at any layer. Design each security control to operate independently. No single layer's failure should cascade into full system compromise.
 
-The chatbot answers personal finance questions using 3-4 CFP/investment PDFs as its knowledge base. It runs on AKS with Cilium networking, Tetragon runtime enforcement, and Splunk monitoring. But the story is the layering, not the chat.
+The chatbot answers personal finance questions using a small set of PDFs as its knowledge base. It runs on AKS with Cilium networking, Tetragon runtime enforcement, and Splunk monitoring. But the story is the layering, not the chat.
 
 ---
 
@@ -496,7 +496,7 @@ Source: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jek
 docs/
 ├── index.md                   # Landing page: project overview, security philosophy
 ├── architecture/
-│   ├── overview.md            # Three domains, seven layers diagram and summary
+│   ├── overview.md            # Three domains, eight layers diagram and summary
 │   ├── infrastructure.md      # Layers 1-4: Cilium, Tetragon, Key Vault, Caddy
 │   ├── ai-security.md         # Layer 5: AIBOM, Hubness Detector, IDE Scanner
 │   └── developer-workflow.md  # Layers 6-7: GitHub Actions gates, Splunk audit

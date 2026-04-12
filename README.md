@@ -1,6 +1,6 @@
 # 🍯 Money Honey
 
-A financial education chatbot wrapped in seven independent security layers. The chatbot is the demo. The defense-in-depth architecture is the lesson.
+A financial education chatbot wrapped in eight independent security layers. The chatbot is the demo. The defense-in-depth architecture is the lesson.
 
 ## 🎯 The idea
 

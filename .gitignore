@@ -52,7 +52,7 @@ splunk/var/
 # Claude Code
 .claude/settings.json
 
-# Knowledge base PDFs (copyrighted material, load at runtime or via volume mount)
+# Knowledge base PDFs (local content, load at runtime or via volume mount)
 app/knowledge_base/pdfs/*.pdf
 
 # Terraform-generated SSH private key for the Splunk VM.

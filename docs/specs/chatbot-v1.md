@@ -72,7 +72,7 @@ Money Honey is a financial-education chatbot. The chatbot is the demo vehicle; t
 | **AC-2** | **Given** the backend has no PDFs, **When** a client calls `GET /api/health`, **Then** the response is 200 with `index_ready: false`. | FR-1, FR-3 |
 | **AC-3** | **Given** a ready backend, **When** a client POSTs `{ "message": "Should I invest in crypto?" }` to `/api/chat`, **Then** the response is 200 with a non-empty `reply` string and `sources_used: 4`. | FR-2, FR-4, FR-5 |
 | **AC-4** | **Given** a ready backend, **When** the LLM returns a response, **Then** the response tone matches the personality system prompt (uses "babe"/"honey"/"sweetheart" naturally, stays in personal finance). | FR-6 |
-| **AC-5** | **Given** the FAISS index contains 3 CFP PDFs, **When** a user asks about emergency funds, **Then** the retrieved context includes at least one chunk from the CFP PDFs. | FR-3, FR-4 |
+| **AC-5** | **Given** the FAISS index contains the configured PDFs, **When** a user asks about emergency funds, **Then** the retrieved context includes at least one chunk from the knowledge base. | FR-3, FR-4 |
 | **AC-6** | **Given** the frontend is running, **When** a user types a message and clicks Send, **Then** the message appears in the history, a request is made to `/api/chat`, and the reply is rendered. | FR-8, FR-9 |
 | **AC-7** | **Given** the backend returns a 503, **When** the frontend receives that error, **Then** the UI shows a friendly error message (not a stack trace). | FR-10, FR-12 |
 | **AC-8** | **Given** a message of 2001 characters, **When** it is POSTed to `/api/chat`, **Then** the response is 422 with a validation-error body. | FR-11 |
@@ -189,7 +189,7 @@ interface ValidationErrorItem {
 - [x] Every AC references at least one FR or NFR
 - [x] API contracts cover all endpoints
 - [x] Data models cover all entities mentioned
-- [x] Edge cases cover every external dependency (PDFs, Anthropic, OpenAI, user input)
+- [x] Edge cases cover every external dependency (PDFs, Anthropic, user input)
 - [x] Out of Scope is explicit
 - [x] NFRs have measurable thresholds
 - [x] RFC 2119 keywords used (MUST / SHOULD / MAY)
