@@ -48,11 +48,11 @@ Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, pret
 |---|---|
 | 1. Repo scaffold | ✅ Done |
 | 2. Application layer (FastAPI + React) | ✅ Done |
-| 3. Infrastructure (Terraform) | ✅ Done — `terraform plan` ready |
-| 4. Kubernetes manifests | ⏳ Next |
-| 5. CI/CD workflows | ⏳ |
+| 3. Infrastructure (Terraform) | ✅ Done — AKS + KV + VNet + Splunk VM applied to Azure |
+| 4. Kubernetes manifests | 🚧 All manifests written + dry-run clean. Safe subset (ns, CNPs, TracingPolicies, SPC) applied. App Deployments blocked on step 5 (images). |
+| 5. CI/CD workflows | ⏳ Next — docker-build, deploy, aibom, hubness-scan + quality (already live) |
 | 6. Jekyll docs site | ⏳ |
-| 3a. Cloudflare Tunnel (Layer 8) | 🚧 Tokens in Key Vault, cloudflared on Splunk VM. Chatbot tunnel pod in step 4. |
+| 3a. Cloudflare Tunnel (Layer 8) | 🚧 Tokens in Key Vault, cloudflared on Splunk VM script ready. Chatbot tunnel pod manifest written. |
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, build plan, and Claude Code session rules.
 
