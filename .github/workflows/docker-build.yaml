@@ -62,7 +62,11 @@ jobs:
 
       # Stage 2: scan the locally-built image. Fails HIGH + CRITICAL.
       - name: Trivy — scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
+        env:
+          # Authenticated GitHub API calls — prevents rate-limited
+          # downloads of the Trivy binary + DB from GitHub releases.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: money-honey-app:ci-scan
           format: table
@@ -112,7 +116,9 @@ jobs:
           tags: money-honey-frontend:ci-scan
 
       - name: Trivy — scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: money-honey-frontend:ci-scan
           format: table
@@ -137,13 +143,19 @@ jobs:
     needs: [build-backend, build-frontend]
     if: always()
     runs-on: ubuntu-latest
+    # Hoist secrets into job env so the step-level `if` can read them.
+    # `secrets.*` is NOT allowed in step `if` expressions per GitHub's
+    # workflow validator; `env.*` is. Empty if the secret is unset.
+    env:
+      WEBEX_BOT_TOKEN: ${{ secrets.WEBEX_BOT_TOKEN }}
+      WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
     steps:
       - name: Send Webex message
-        if: ${{ secrets.WEBEX_BOT_TOKEN != '' }}
+        if: env.WEBEX_BOT_TOKEN != ''
         uses: chrivand/action-webex-js@b75da3c89c7e9d5f18abdf9de472cbc8f2c20f14
         with:
-          token: ${{ secrets.WEBEX_BOT_TOKEN }}
-          roomId: ${{ secrets.WEBEX_ROOM_ID }}
+          token: ${{ env.WEBEX_BOT_TOKEN }}
+          roomId: ${{ env.WEBEX_ROOM_ID }}
           message: |
             **docker-build** on `${{ github.ref_name }}`
             Backend: ${{ needs.build-backend.result }} · Frontend: ${{ needs.build-frontend.result }}
