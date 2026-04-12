@@ -159,8 +159,9 @@ Rules:
 - GitHub Actions (`.github/workflows/`) use `ci-cd-pipeline-builder`.
 - Observability configs (`k8s/fluent-bit/`, `k8s/otel/`, Splunk) use `observability-designer`.
 - Debugging anything broken uses `focused-fix`. Do not blind-patch.
-- Reviewing changes uses `code-reviewer` + `adversarial-reviewer` (for AI / PDF changes).
+- Reviewing changes uses `code-reviewer` + `adversarial-reviewer` (for AI / PDF changes) + `senior-security` (for any app-code change).
 - Incident or alert playbooks use `incident-response`.
+- Testing uses `tdd-guide` (unit + framework-level discipline), `api-test-suite-builder` (for FastAPI contract tests), and `senior-qa` (for test plans and release gates). No new function ships without tests.
 
 If no skill maps cleanly to the task, say so explicitly and ask before proceeding freeform.
 
@@ -178,7 +179,7 @@ After this, every `git commit` runs:
 - `tfsec` on Terraform files
 - Private-key detection, large-file block, YAML/JSON syntax, trailing whitespace
 
-The hook MUST pass locally before commit. CI runs the same checks in step 5 as a second line of defense. **GitHub push protection** (repo Settings → Code security → Secret scanning → Push protection) is enabled as the third line.
+The hook MUST pass locally before commit. CI runs the same checks in step 5 as a second line of defense. **GitHub Secret Protection** (repo Settings → Code security → Secret Protection → enable; push protection is a toggle inside that panel) is enabled as the third line.
 
 ### Code simplicity
 
@@ -535,6 +536,11 @@ Sourced from https://github.com/alirezarezvani/claude-skills. Installed to `.cla
 | docker-development | advanced | Dockerfile best practices, multi-stage builds, layer optimization. | When writing or reviewing Dockerfiles. |
 | focused-fix | advanced | Structured debugging: scope, trace, diagnose, fix, verify. | When something breaks. Do not blind-patch. |
 | code-reviewer | team | General code review: style, correctness, maintainability. | Before opening a PR or after finishing a logical change. |
+| tdd-guide | team | Red-green-refactor TDD discipline, test framework patterns, coverage analysis. | Before writing any new function. Pairs with spec-driven-workflow (phase 4). |
+| senior-qa | team | QA strategy, test plans, exploratory testing, release gates. | When defining how a feature gets verified end-to-end. |
+| api-test-suite-builder | advanced | Generate API tests from OpenAPI specs; contract + integration tests. | When writing tests for `/api/chat` and `/api/health`. |
+| cloud-security | team | Azure-specific security review: identity, network, data plane, posture. | Mandatory for every `infra/terraform/` and `k8s/` commit. |
+| senior-security | team | OWASP Top 10, auth patterns, input validation, secrets hygiene. | Pairs with code-reviewer on every app-code PR. |
 
 Plugin key: **advanced** = `engineering-advanced-skills`, **team** = `engineering-skills`. Both from the `alirezarezvani/claude-skills` marketplace.
 
