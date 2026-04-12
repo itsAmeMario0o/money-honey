@@ -36,11 +36,11 @@ Money Honey is a financial-education chatbot. The chatbot is the demo vehicle; t
 |---|---|
 | **FR-1** | The system MUST expose `GET /api/health` that returns a 200 JSON body with `status`, `index_ready`, `llm_ready` booleans. |
 | **FR-2** | The system MUST expose `POST /api/chat` that accepts `{ "message": string }` and returns `{ "reply": string, "sources_used": integer }`. |
-| **FR-3** | The backend MUST load every PDF in `app/knowledge_base/pdfs/` on startup, chunk them, embed them with `text-embedding-3-small`, and store the embeddings in an in-memory FAISS index. |
+| **FR-3** | The backend MUST load every PDF in `app/knowledge_base/pdfs/` on startup, chunk them, embed them with the local `sentence-transformers/all-MiniLM-L6-v2` model (no external API calls), and store the embeddings in an in-memory FAISS index. |
 | **FR-4** | For every chat request, the backend MUST retrieve the top-4 most similar chunks from FAISS and include them as context in the LLM prompt. |
 | **FR-5** | The backend MUST send requests to the Claude API using the model `claude-haiku-4-5-20251001`. |
 | **FR-6** | The LLM system prompt MUST be the Money Honey personality defined in `app/personality.py`. |
-| **FR-7** | The backend MUST read `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `ALLOWED_ORIGINS` from environment variables. It MUST NOT read secrets from code, config files, or command-line flags. |
+| **FR-7** | The backend MUST read `ANTHROPIC_API_KEY` and `ALLOWED_ORIGINS` from environment variables. It MUST NOT read secrets from code, config files, or command-line flags. |
 | **FR-8** | The frontend MUST render a chat UI with an input field, a send button, and a scrolling history of user / Money Honey messages. |
 | **FR-9** | The frontend MUST POST user messages to `/api/chat` and render the returned `reply` field as Money Honey's response. |
 | **FR-10** | The frontend MUST surface API errors to the user without leaking stack traces or server internals. |
@@ -54,7 +54,7 @@ Money Honey is a financial-education chatbot. The chatbot is the demo vehicle; t
 | ID | Requirement | Measurable threshold |
 |---|---|---|
 | **NFR-1** (performance) | `/api/chat` p95 end-to-end latency SHOULD be under 5 seconds for a 3-PDF corpus. | p95 < 5000 ms |
-| **NFR-2** (cost) | Total Claude + OpenAI spend SHOULD stay under $5/month at demo traffic (< 500 messages/month). | < $5/month |
+| **NFR-2** (cost) | Total Claude API spend SHOULD stay under $5/month at demo traffic (< 500 messages/month). Embeddings are local and free. | < $5/month |
 | **NFR-3** (security) | No secrets MUST appear in code, logs, container images, or git history. | 0 findings in `gitleaks` + image scan |
 | **NFR-4** (security) | Frontend–backend traffic MUST be HTTPS in production (Caddy handles TLS). | 100% HTTPS |
 | **NFR-5** (container) | Both container images MUST run as a non-root user. | `USER` != `root` |
@@ -88,7 +88,7 @@ Money Honey is a financial-education chatbot. The chatbot is the demo vehicle; t
 | **EC-1** | No PDFs in `knowledge_base/pdfs/` | `build_index` returns `None`. App starts. `/api/chat` returns 503. `/api/health` returns `index_ready: false`. |
 | **EC-2** | Claude API is unreachable | Request raises; backend responds with 502 (future hardening: currently propagates as 500). |
 | **EC-3** | Claude API returns a rate-limit error | Same as EC-2 for v1. Retry logic is a v1.1 concern. |
-| **EC-4** | OpenAI embeddings API fails during startup | App logs the error and exits non-zero (fail-fast; K8s restarts). |
+| **EC-4** | Embedding model fails to load (disk full, corrupt cache) | App logs the error and exits non-zero (fail-fast; K8s restarts). |
 | **EC-5** | User submits empty string | Pydantic rejects with 422 (FR-11 uses `min_length=1`). |
 | **EC-6** | User submits message > 2000 chars | 422 with validation error (FR-11). |
 | **EC-7** | PDF fails to parse (corrupt file) | `PyPDFLoader` raises; app fails to start. Operator replaces the PDF. Fail loud, not silent. |
@@ -149,7 +149,7 @@ interface ValidationErrorItem {
 | Entity | Fields | Source |
 |---|---|---|
 | `Document` (LangChain) | `page_content: str`, `metadata: dict` (filename, page) | `PyPDFLoader` |
-| `FAISS index` | embedding vectors (1536-dim `text-embedding-3-small`) + doc store | built on startup |
+| `FAISS index` | embedding vectors (384-dim `all-MiniLM-L6-v2`) + doc store | built on startup |
 | `ChatRequest` | `message: str` (pydantic `Field(min_length=1, max_length=2000)`) | client |
 | `ChatResponse` | `reply: str`, `sources_used: int` | server |
 
@@ -162,7 +162,6 @@ interface ValidationErrorItem {
 | Name | Location in prod | Location in dev |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Azure Key Vault → CSI volume | `app/.env` (gitignored) |
-| `OPENAI_API_KEY` | Azure Key Vault → CSI volume | `app/.env` (gitignored) |
 | `ALLOWED_ORIGINS` | ConfigMap | `app/.env` |
 
 ---

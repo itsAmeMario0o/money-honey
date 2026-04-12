@@ -50,13 +50,13 @@ Money Honey: "The one you pay off every month, sweetheart. But since you asked, 
 Controls that protect the platform the chatbot runs on.
 
 **Layer 1: Network identity and segmentation (Cilium)**
-Azure CNI powered by Cilium provides eBPF-based networking with identity-aware L3/L4 policy enforcement. Default-deny ingress and egress. Every pod-to-pod and pod-to-external connection requires an explicit CiliumNetworkPolicy. Egress restricted to known IPs (Claude API, OpenAI embeddings, Splunk HEC). No FQDN or L7 filtering in v1 (requires ACNS).
+Azure CNI powered by Cilium provides eBPF-based networking with identity-aware L3/L4 policy enforcement. Default-deny ingress and egress. Every pod-to-pod and pod-to-external connection requires an explicit CiliumNetworkPolicy. Egress restricted to known IPs (Claude API, Splunk HEC). Embeddings run locally in-process — no external embedding provider. No FQDN or L7 filtering in v1 (requires ACNS).
 
 **Layer 2: Runtime enforcement (Tetragon)**
 Tetragon runs as a DaemonSet, observing every process execution, file access, and network connection at the kernel level via eBPF. TracingPolicy CRDs define allowlists: which binaries can run, which files can be read, which network connections are permitted. Violations trigger SIGKILL (not just alerts). Process credential and namespace tracking enabled. JSON events exported for Fluent Bit collection.
 
 **Layer 3: Secrets isolation (Azure Key Vault + CSI Driver)**
-No secrets in environment variables, ConfigMaps, or code. All credentials (Claude API key, Splunk HEC token, embeddings API key) stored in Azure Key Vault. CSI Secret Store Driver mounts them as volumes. Managed Identity authentication. No service principal passwords.
+No secrets in environment variables, ConfigMaps, or code. All credentials (Claude API key, Splunk HEC token) stored in Azure Key Vault. CSI Secret Store Driver mounts them as volumes. Managed Identity authentication. No service principal passwords.
 
 **Layer 4: TLS termination and header hardening (Caddy)**
 Caddy handles automatic Let's Encrypt TLS for money-honey.mariojruiz.com. Security headers enforced: X-Frame-Options DENY, Content-Security-Policy, Server header stripped. Reverse proxy routes `/api/*` to FastAPI and `/` to React. No direct pod exposure.
@@ -193,7 +193,7 @@ The tone across all code should be consistent: plain, readable, no surprises.
 | RAG framework | LangChain | Document loading, chunking, retrieval chain |
 | LLM | Claude API (Anthropic) | Direct API, not Azure OpenAI or Bedrock |
 | Vector store | FAISS | In-memory or local persistence, 3-4 PDFs |
-| Embeddings | text-embedding-3-small (OpenAI) | Cost: less than $1/month for this corpus size |
+| Embeddings | sentence-transformers/all-MiniLM-L6-v2 | Local model (~80 MB), runs in the FastAPI pod. No external API. |
 | Reverse proxy | Caddy | Automatic Let's Encrypt TLS |
 
 ### Infrastructure
@@ -373,7 +373,7 @@ Webex Bot via `chrivand/action-webex-js`. Secrets: `WEBEX_BOT_TOKEN`, `WEBEX_ROO
 | Load Balancer | Standard | ~$18 |
 | Key Vault | Standard | <$1 |
 | Claude API | $20 prepaid | ~$3-5 |
-| Embeddings | text-embedding-3-small | <$1 |
+| Embeddings | Local (sentence-transformers) | $0 |
 | **Total** | | **~$153-155/mo (running)** |
 
 With `az aks stop` when not demoing: ~$65-70/month (Splunk VM + storage only).
