@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: kube-system
+  labels:
+    app: otel-collector
+    component: observability
+    part-of: money-honey
+data:
+  otel-collector.yaml: |
+    receivers:
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'tetragon'
+              scrape_interval: 30s
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names: ["kube-system"]
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+                  regex: tetragon
+                  action: keep
+                - source_labels: [__address__]
+                  regex: (.+):(\d+)
+                  target_label: __address__
+                  replacement: $1:2112
+
+    processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 100
+      resource:
+        attributes:
+          - key: cluster
+            value: money-honey-aks
+            action: upsert
+
+    exporters:
+      # Splunk HEC metrics endpoint. The HEC token in the Splunk HEC
+      # Secret is the same token Fluent Bit uses — both write into
+      # the same Splunk instance.
+      splunk_hec/metrics:
+        token: ${SPLUNK_HEC_TOKEN}
+        endpoint: https://${SPLUNK_HEC_HOST}:8088/services/collector
+        tls:
+          insecure_skip_verify: true
+        source: "otel-collector"
+        sourcetype: "prometheus"
+        index: "metrics"
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [batch, resource]
+          exporters: [splunk_hec/metrics]

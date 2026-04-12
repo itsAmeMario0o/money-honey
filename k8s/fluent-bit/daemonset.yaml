@@ -1,0 +1,96 @@
+# Fluent Bit runs on every node so it can tail Tetragon's local file.
+# Needs hostPath mount for /var/run/cilium/tetragon/ — same scope
+# Tetragon itself uses.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: kube-system
+  labels:
+    app: fluent-bit
+    component: observability
+    part-of: money-honey
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: kube-system
+  labels:
+    app: fluent-bit
+    component: observability
+    part-of: money-honey
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+        component: observability
+        part-of: money-honey
+    spec:
+      serviceAccountName: fluent-bit
+      # Host mount of Tetragon's log path needs this tolerance on
+      # the node's security context. We stay non-root where possible.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:3.1.10
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SPLUNK_HEC_HOST
+              # Substituted at deploy time; placeholder until the
+              # Splunk VM is installed and its private IP known.
+              value: "10.0.4.4"
+            - name: SPLUNK_HEC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: splunk-hec
+                  key: SPLUNK_HEC_TOKEN
+          ports:
+            - name: http
+              containerPort: 2020
+          volumeMounts:
+            - name: config
+              mountPath: /fluent-bit/etc
+            - name: tetragon-logs
+              mountPath: /var/run/cilium/tetragon
+              readOnly: true
+            - name: varlog
+              mountPath: /var/log
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: config
+          configMap:
+            name: fluent-bit-config
+        - name: tetragon-logs
+          hostPath:
+            path: /var/run/cilium/tetragon
+            type: Directory
+        - name: varlog
+          emptyDir: {}
+      # Fluent Bit is in kube-system, not money-honey, so our
+      # CiliumNetworkPolicy default-deny doesn't apply here. The pod
+      # needs egress to Splunk HEC on the VM — covered by default
+      # cluster networking since there's no CNP in kube-system.

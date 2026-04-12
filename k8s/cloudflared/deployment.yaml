@@ -1,0 +1,76 @@
+# cloudflared Deployment — Layer 8 zero-trust edge.
+# The pod dials outbound to Cloudflare's edge using the tunnel
+# connector token loaded from Key Vault via the CSI driver. Its
+# origin in the tunnel config is caddy:80 (ClusterIP Service).
+#
+# The tunnel's Public Hostname mapping (the clickable URL end-users
+# hit) is configured in the Cloudflare Zero Trust dashboard AFTER
+# the tunnel shows HEALTHY here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: money-honey
+  labels:
+    app: cloudflared
+    component: edge
+    part-of: money-honey
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+        component: edge
+        part-of: money-honey
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:2024.12.1
+          imagePullPolicy: IfNotPresent
+          # Run the named tunnel mode with the token supplied via env
+          # (sourced from the K8s Secret that the SecretProviderClass
+          # syncs out of Key Vault).
+          args:
+            - tunnel
+            - --no-autoupdate
+            - run
+            - --token
+            - $(TUNNEL_TOKEN)
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-chatbot
+                  key: CLOUDFLARED_TOKEN
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 2000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 2000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

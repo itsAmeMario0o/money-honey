@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy
+  namespace: money-honey
+  labels:
+    app: caddy
+    component: proxy
+    part-of: money-honey
+spec:
+  type: ClusterIP
+  selector:
+    app: caddy
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

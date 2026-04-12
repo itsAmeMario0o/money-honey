@@ -11,20 +11,19 @@ metadata:
   name: process-exec-audit
   namespace: money-honey
 spec:
+  # Audits the filename argument to execve(). We don't parse argv[]
+  # here because Tetragon's kprobe type system doesn't expose char**.
+  # The filename is enough for a first-pass allowlist.
   kprobes:
     - call: "sys_execve"
       syscall: true
       args:
         - index: 0
           type: "string"
-        - index: 1
-          type: "char **"
       selectors:
-        # Allowlist of "normal" binaries for a FastAPI + React stack.
-        # Anything outside these logs as a warning to Splunk.
         - matchArgs:
             - index: 0
-              operator: "Postfix"
+              operator: "NotPostfix"
               values:
                 - "/python"
                 - "/python3"
@@ -35,10 +34,9 @@ spec:
                 - "/nginx"
                 - "/caddy"
                 - "/sh"
+                - "/bash"
           matchActions:
-            - action: FollowFD
-              argFd: 0
-              argName: 1
+            - action: Post
 ---
 # Audit every network connect() from money-honey pods. This gives us a
 # per-syscall record of where each pod actually talks to — independent

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react
+  namespace: money-honey
+  labels:
+    app: react
+    component: frontend
+    part-of: money-honey
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: react
+  template:
+    metadata:
+      labels:
+        app: react
+        component: frontend
+        part-of: money-honey
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: react
+          # Built + pushed in step 5. Until then, pods will ImagePullBackOff.
+          image: ghcr.io/itsamemario0o/money-honey-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            # nginx needs a writable tmp + cache for request handling.
+            # We run non-root and drop capabilities; FS is read-only
+            # except for the specific emptyDir mounts below.
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
