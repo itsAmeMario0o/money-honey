@@ -1,0 +1,12 @@
+// Copy this file to terraform.tfvars to override defaults.
+// terraform.tfvars is gitignored so your local values never get committed.
+// Every value below is OPTIONAL — the defaults in variables.tf are production-ready.
+
+// subscription_id     = "REDACTED-SUBSCRIPTION-ID"
+// resource_group_name = "money-honey-rg"
+// location            = "eastus"
+// environment         = "demo"
+
+// Set this only when running from CI or behind a NAT that breaks ipify.org.
+// Example: allow a corporate egress CIDR instead of auto-detecting.
+// admin_source_cidr_override = "203.0.113.42/32"

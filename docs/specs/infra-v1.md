@@ -75,7 +75,10 @@ CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 |---|---|
 | **FR-19** | A **Ubuntu 22.04 LTS (Jammy)** VM of SKU `Standard_B2ms` named `money-honey-splunk` MUST be created with an attached `64 GB` Standard SSD (line 352). The OS image MUST be `Canonical / 0001-com-ubuntu-server-jammy / 22_04-lts-gen2`, pinned by version (not `latest`). |
 | **FR-20** | The VM MUST use SSH key authentication only (no password). Terraform MUST generate a fresh RSA 4096-bit keypair using the `tls_private_key` resource. The public key MUST be written to the VM's `admin_ssh_key` block. |
-| **FR-21** | The VM's NSG MUST allow inbound `22/tcp` and `8000/tcp` (Splunk Web) only from the operator's current public IP, auto-detected at plan time via the `http` data source against `https://api.ipify.org` (IP returned as `/32`). An optional variable `admin_source_cidr_override` MAY be set to bypass auto-detection (e.g. for CI). `8088/tcp` (HEC) MUST be allowed only from the AKS subnet CIDR. |
+| **FR-21** | The VM's NSG MUST allow inbound `22/tcp` and `8000/tcp` (Splunk Web) only from the operator's current public IP, auto-detected at plan time via the `http` data source against `https://api.ipify.org` (IP returned as `/32`). An optional variable `admin_source_cidr_override` MAY be set to bypass auto-detection (e.g. for CI). `8088/tcp` (HEC) MUST be allowed only from the AKS node subnet CIDR. |
+| **FR-27** | AKS and the Splunk VM MUST live in the same VNet so AKS worker nodes have L3 reachability to Splunk with no peering, no public hop, and no Private Link. One VNet `money-honey-vnet` (CIDR `10.0.0.0/16`) MUST contain two subnets: `aks-nodes` (`10.0.0.0/22`, used by the AKS default node pool) and `splunk` (`10.0.4.0/28`, used by the Splunk VM NIC). |
+| **FR-28** | The Splunk NSG's `8088/tcp` ingress rule source prefix MUST be the `aks-nodes` subnet CIDR (`10.0.0.0/22`). The NSG MUST NOT expose `8088/tcp` to the public internet or to the operator IP. |
+| **FR-29** | The AKS cluster's default node pool MUST attach to the `aks-nodes` subnet via `vnet_subnet_id`, so worker node primary IPs fall in `10.0.0.0/22` and match FR-28's source prefix. |
 | **FR-22** | Splunk itself is NOT installed by Terraform. A companion script `infra/scripts/install-splunk.sh` is delivered as-is and runs manually via SSH in step 7 (deploy). |
 | **FR-25** | The generated SSH private key MUST be written to `infra/private_key/splunk.pem` (file permissions `0600`) via the `local_sensitive_file` resource. This is the sole on-disk persistence mechanism. The `infra/private_key/` folder MUST be listed in `.gitignore` before any `terraform apply` runs. |
 | **FR-26** | If the local key file is lost, the operator MUST be able to recover it with `terraform output -raw splunk_ssh_private_key > infra/private_key/splunk.pem && chmod 600 infra/private_key/splunk.pem`. The `splunk_ssh_private_key` output MUST be marked `sensitive = true`. |
@@ -114,6 +117,9 @@ CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 | **AC-5** | **Given** the plan output, **When** reviewed, **Then** AKS has `network_data_plane = "cilium"`. | FR-7 |
 | **AC-6** | **Given** the plan output, **When** reviewed, **Then** the Tetragon `helm_release` pins `version = "1.3.0"` and sets all required values from FR-18. | FR-17, FR-18 |
 | **AC-7** | **Given** the plan output, **When** reviewed, **Then** the Splunk NSG's `22/tcp` rule source prefix is a single IP `/32` obtained from the `http` data source (not `0.0.0.0/0`). | FR-21, NFR-3 |
+| **AC-13** | **Given** the plan output, **When** reviewed, **Then** one VNet `money-honey-vnet` (CIDR `10.0.0.0/16`) exists with subnets `aks-nodes` (`10.0.0.0/22`) and `splunk` (`10.0.4.0/28`). | FR-27 |
+| **AC-14** | **Given** the plan output, **When** reviewed, **Then** the AKS default node pool sets `vnet_subnet_id` to the `aks-nodes` subnet. | FR-29 |
+| **AC-15** | **Given** the plan output, **When** reviewed, **Then** the Splunk NSG's `8088/tcp` rule has source prefix `10.0.0.0/22` (the `aks-nodes` subnet) and destination port `8088`. | FR-28 |
 | **AC-11** | **Given** a successful `terraform apply`, **When** the operator inspects `infra/private_key/splunk.pem`, **Then** the file exists with permissions `0600` and the folder is listed in `.gitignore`. | FR-25 |
 | **AC-12** | **Given** the local key file is deleted, **When** `terraform output -raw splunk_ssh_private_key` runs, **Then** a valid RSA private key in PEM format is returned. | FR-26 |
 | **AC-8** | **Given** `terraform validate` runs, **When** executed, **Then** it exits 0. | NFR-5 |
@@ -202,11 +208,12 @@ output "ingress_public_ip"    { value = null }  # populated in step 4
 | Splunk public IP | `azurerm_public_ip` | 1 |
 | Splunk OS disk (implicit) | — | 1 |
 | Splunk data disk | `azurerm_managed_disk` + attach | 1 |
-| Splunk VNet / subnet | `azurerm_virtual_network` + `azurerm_subnet` | 1 each (or reuse AKS VNet) |
+| Shared VNet (AKS + Splunk) | `azurerm_virtual_network` | 1 (`10.0.0.0/16`) |
+| Subnets | `azurerm_subnet` | 2 (`aks-nodes` 10.0.0.0/22, `splunk` 10.0.4.0/28) |
 | Splunk NSG + rules | `azurerm_network_security_group` + 3 rules | 1 NSG, 3 rules |
 | Random suffix for KV name | `random_string` | 1 |
 
-**Total: ~16 resources.**
+**Total: ~17 resources.**
 
 ---
 
