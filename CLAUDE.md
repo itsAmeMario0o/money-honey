@@ -176,7 +176,8 @@ Rules:
 - Debugging anything broken uses `focused-fix`. Do not blind-patch.
 - Reviewing changes uses `code-reviewer` + `adversarial-reviewer` (for AI / PDF changes) + `senior-security` (for any app-code change).
 - Incident or alert playbooks use `incident-response`.
-- Testing uses `tdd-guide` (unit + framework-level discipline), `api-test-suite-builder` (for FastAPI contract tests), and `senior-qa` (for test plans and release gates). No new function ships without tests.
+- Testing uses `tdd-guide` (unit + framework-level discipline), `api-test-suite-builder` (for FastAPI contract tests), and `senior-qa` (for test plans and release gates). **No new function ships without tests** — pytest for `app/`, vitest for `frontend/`. Tests live at `app/tests/` and `frontend/src/**/__tests__/`.
+- Code quality is enforced at three layers: (1) pre-commit hook (ruff, black, gitleaks, tfsec) blocks bad Python + secrets + IaC; (2) `.github/workflows/quality.yaml` runs pytest + vitest + tsc + eslint + prettier + mypy on every PR; (3) the CLAUDE.md-listed skill is applied before writing code. All three MUST pass before merge.
 
 If no skill maps cleanly to the task, say so explicitly and ask before proceeding freeform.
 
@@ -194,7 +195,7 @@ After this, every `git commit` runs:
 - `tfsec` on Terraform files
 - Private-key detection, large-file block, YAML/JSON syntax, trailing whitespace
 
-The hook MUST pass locally before commit. CI runs the same checks in step 5 as a second line of defense. **GitHub Secret Protection** (repo Settings → Code security → Secret Protection → enable; push protection is a toggle inside that panel) is enabled as the third line.
+The hook MUST pass locally before commit. **`.github/workflows/quality.yaml`** runs the same checks plus `pytest` + `vitest` + `tsc` + `eslint` + `prettier` on every PR as a second line of defense. **GitHub Secret Protection** (repo Settings → Code security → Secret Protection → enable; push protection is a toggle inside that panel) is enabled as the third line.
 
 ### Code simplicity
 
