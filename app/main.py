@@ -51,7 +51,12 @@ app.add_middleware(
 
 vector_index = build_index()
 llm = (
-    ChatAnthropic(model_name=MODEL_NAME, api_key=SecretStr(ANTHROPIC_API_KEY))
+    ChatAnthropic(
+        model_name=MODEL_NAME,
+        api_key=SecretStr(ANTHROPIC_API_KEY),
+        timeout=30.0,  # per chatbot-v1 spec NFR-1 (p95 < 5s; 30s is a safe upper bound)
+        stop=None,
+    )
     if ANTHROPIC_API_KEY
     else None
 )
