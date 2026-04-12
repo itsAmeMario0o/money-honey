@@ -1,0 +1,115 @@
+# Dependabot v2 configuration for Money Honey.
+# Complements the Trivy scans in quality.yaml + docker-build.yaml:
+# Trivy DETECTS vulnerable deps in CI, Dependabot OPENS PRs with the
+# actual fix. Together they close the detect-remediate loop.
+#
+# Strategy: weekly, grouped (patch+minor into one PR per ecosystem),
+# capped at 5 open PRs per ecosystem, major bumps remain individual
+# PRs so they get explicit review.
+
+version: 2
+updates:
+  # -------------------- Python (FastAPI backend) --------------------
+  - package-ecosystem: "pip"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(app)"
+      include: "scope"
+    groups:
+      python-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # -------------------- Node (React frontend) -----------------------
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "deps(frontend)"
+      include: "scope"
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # -------------------- GitHub Actions workflows --------------------
+  # Catches things like the `trivy-action@0.28.0` typo we hit earlier.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # -------------------- Docker base images --------------------------
+  # Tracks the FROM lines in each Dockerfile for base-image updates.
+  - package-ecosystem: "docker"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker-app)"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker-frontend)"
+      include: "scope"
+
+  # -------------------- Terraform providers -------------------------
+  # Covers the providers pinned in infra/terraform/versions.tf and
+  # infra/terraform-bootstrap/versions.tf.
+  - package-ecosystem: "terraform"
+    directories:
+      - "/infra/terraform"
+      - "/infra/terraform-bootstrap"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "terraform"
+    commit-message:
+      prefix: "deps(terraform)"
+      include: "scope"
+    groups:
+      terraform-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
