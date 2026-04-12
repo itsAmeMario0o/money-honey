@@ -1,8 +1,11 @@
 // Copy this file to terraform.tfvars to override defaults.
 // terraform.tfvars is gitignored so your local values never get committed.
 // Every value below is OPTIONAL — the defaults in variables.tf are production-ready.
+//
+// Subscription ID is NOT a variable here. Run `az login` and
+// `az account set --subscription <your-sub>` before `terraform plan`.
+// The azurerm provider reads the active subscription from your CLI session.
 
-// subscription_id     = "REDACTED-SUBSCRIPTION-ID"
 // resource_group_name = "money-honey-rg"
 // location            = "eastus"
 // environment         = "demo"

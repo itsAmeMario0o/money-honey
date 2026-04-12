@@ -1,13 +1,10 @@
 // Input variables for the Money Honey Azure stack.
 // Every variable has a description and a type per CLAUDE.md Terraform rules.
 
-// ---- Subscription / placement ----
-
-variable "subscription_id" {
-  description = "Azure subscription ID where all resources live."
-  type        = string
-  default     = "REDACTED-SUBSCRIPTION-ID"
-}
+// ---- Placement ----
+//
+// Subscription comes from the operator's current `az login` session or
+// the ARM_SUBSCRIPTION_ID environment variable. Never pin it in code.
 
 variable "resource_group_name" {
   description = "Name of the single resource group that contains the whole stack."

@@ -1,10 +1,10 @@
 // Provider configurations.
-// azurerm uses the subscription passed as a variable so credentials come
-// from `az login` locally or from a federated identity in GitHub Actions.
+// azurerm reads the subscription from the operator's current `az login`
+// session (or ARM_SUBSCRIPTION_ID env var). The subscription ID is NEVER
+// pinned in code — that avoids leaking tenant structure in a public repo
+// and keeps the module portable across accounts.
 
 provider "azurerm" {
-  subscription_id = var.subscription_id
-
   features {
     key_vault {
       purge_soft_delete_on_destroy    = false

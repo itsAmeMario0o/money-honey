@@ -9,7 +9,7 @@
 | **Status** | ✅ Approved — proceeding to implementation (commits B–F) |
 | **Reviewers** | Mario Ruiz |
 | **Skills used** | `spec-driven-workflow`, `terraform-patterns`, `azure-cloud-architect` |
-| **Subscription** | `REDACTED-SUBSCRIPTION-ID` |
+| **Subscription** | Supplied at runtime via `az login` + `az account set`. Never pinned in code. |
 | **Depends on** | `docs/specs/chatbot-v1.md` (application layer) |
 
 ---
@@ -35,7 +35,7 @@ CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 
 | ID | Requirement |
 |---|---|
-| **FR-1** | Terraform MUST target subscription `REDACTED-SUBSCRIPTION-ID`. |
+| **FR-1** | Terraform MUST read the subscription from the operator's active `az login` session (or `ARM_SUBSCRIPTION_ID` env var). Subscription ID MUST NOT appear in any file under version control. |
 | **FR-2** | All resources MUST live in a single resource group named `money-honey-rg` in region `eastus`. |
 | **FR-3** | Terraform state MUST be stored in an Azure Storage Account container (remote backend). The storage account itself MUST be created out-of-band via `infra/scripts/bootstrap-state.sh` (chicken-and-egg problem). |
 | **FR-4** | The state backend MUST have blob versioning and soft-delete enabled. |
