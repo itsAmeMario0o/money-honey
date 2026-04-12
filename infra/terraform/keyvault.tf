@@ -88,3 +88,37 @@ resource "azurerm_key_vault_secret" "splunk_hec_token" {
 
   depends_on = [azurerm_key_vault_access_policy.operator]
 }
+
+// --- Cloudflare Tunnel connector tokens ---
+// Layer 8 (Cloudflare Tunnel + Zero Trust). Tokens come from the
+// Cloudflare dashboard when each named tunnel is created. Values are
+// set manually via `az keyvault secret set`; Terraform only creates the
+// shells and ignores their values after creation.
+
+resource "azurerm_key_vault_secret" "cloudflare_tunnel_splunk_token" {
+  name            = "cloudflare-tunnel-splunk-token"
+  value           = "set-me-in-portal"
+  key_vault_id    = azurerm_key_vault.money_honey.id
+  content_type    = "text/plain"
+  expiration_date = "2027-01-01T00:00:00Z"
+
+  lifecycle {
+    ignore_changes = [value, version]
+  }
+
+  depends_on = [azurerm_key_vault_access_policy.operator]
+}
+
+resource "azurerm_key_vault_secret" "cloudflare_tunnel_chatbot_token" {
+  name            = "cloudflare-tunnel-chatbot-token"
+  value           = "set-me-in-portal"
+  key_vault_id    = azurerm_key_vault.money_honey.id
+  content_type    = "text/plain"
+  expiration_date = "2027-01-01T00:00:00Z"
+
+  lifecycle {
+    ignore_changes = [value, version]
+  }
+
+  depends_on = [azurerm_key_vault_access_policy.operator]
+}

@@ -54,17 +54,9 @@ resource "azurerm_network_security_group" "splunk" {
     destination_address_prefix = "*"
   }
 
-  security_rule {
-    name                       = "allow-splunk-web-operator"
-    priority                   = 1010
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "8000"
-    source_address_prefix      = local.operator_ip_cidr
-    destination_address_prefix = "*"
-  }
+  // Splunk Web (port 8000) is NOT exposed via NSG. Cloudflare Tunnel
+  // (Layer 8) fronts the UI instead — cloudflared dials outbound from
+  // the VM to Cloudflare's edge, so no inbound rule is needed.
 
   security_rule {
     name                       = "allow-hec-aks-subnet"
