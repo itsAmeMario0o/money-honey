@@ -49,8 +49,8 @@ All workflows run on GitHub-hosted Ubuntu runners. No self-hosted runners in v1.
 | ID | Requirement |
 |---|---|
 | **FR-12** | The workflow MUST run on every PR that touches `app/` or `frontend/`. |
-| **FR-13** | It MUST invoke Cisco AI Defense AIBOM (`cisco-ai-defense/aibom-action` — pin a tag) to produce an AI Bill of Materials manifest. |
-| **FR-14** | If the AIBOM surfaces an untracked AI component, the workflow MUST fail and block the PR. |
+| **FR-13** | It MUST generate a machine-readable AI Bill of Materials manifest. **Current implementation:** a CycloneDX SBOM via `anchore/sbom-action` (syft under the hood) for both `app/` and `frontend/`. Cisco's public AIBOM repo is a spec + JSON schema, not a runnable CLI; we stand in with CycloneDX SBOMs until a Cisco AIBOM CLI ships. |
+| **FR-14** | A "highlight AI/ML components" step greps the SBOM for known AI/ML library names (`langchain`, `anthropic`, `sentence-transformers`, `faiss`, `transformers`, `huggingface`, `torch`, `numpy`) and surfaces them as a PR-visible summary. Hard blocking on "untracked AI component" is deferred to v2 once a baseline manifest is approved. |
 
 ### `hubness-scan.yaml`
 

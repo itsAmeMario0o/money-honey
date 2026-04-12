@@ -1,13 +1,13 @@
-# Cisco AI Defense — AIBOM (AI Bill of Materials).
-# Runs on every PR that touches app/ or frontend/. Fails the PR
-# if an untracked AI component is detected.
+# AI supply-chain scan — produces a CycloneDX SBOM for each service.
 #
-# NOTE: the exact action invocation below is a placeholder based on
-# the public cisco-ai-defense/aibom repo. Before this workflow runs
-# for real, verify the action path + inputs against the current repo:
-#   https://github.com/cisco-ai-defense/aibom
+# Cisco's public AIBOM repo (cisco-ai-defense/aibom) is a spec/schema
+# rather than a runnable CLI, so our original `python -m aibom` approach
+# didn't work. This workflow stands in with syft via anchore/sbom-action:
+# same outcome (machine-readable manifest of every dependency including
+# AI/ML libs), in an industry-standard CycloneDX format. When the Cisco
+# CLI ships, swap the two steps below for the vendor tool.
 
-name: AIBOM (AI supply chain)
+name: AI BOM (AI supply chain)
 
 on:
   pull_request:
@@ -22,33 +22,54 @@ permissions:
   pull-requests: write
 
 jobs:
-  aibom:
-    name: Generate + validate AI Bill of Materials
+  sbom:
+    name: Generate CycloneDX SBOM (app + frontend)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Generate SBOM for app (Python backend)
+        uses: anchore/sbom-action@v0.17.9
         with:
-          python-version: "3.12"
+          path: app
+          format: cyclonedx-json
+          output-file: sbom-app.cdx.json
+          upload-artifact: false
 
-      # Placeholder: clone the aibom repo and run its CLI.
-      # Replace with the official action once its interface stabilizes.
-      - name: Run AIBOM scan
+      - name: Generate SBOM for frontend (Node)
+        uses: anchore/sbom-action@v0.17.9
+        with:
+          path: frontend
+          format: cyclonedx-json
+          output-file: sbom-frontend.cdx.json
+          upload-artifact: false
+
+      - name: Highlight AI / ML components
+        # Simple grep for well-known AI/ML library names across both
+        # SBOMs; useful in PR summaries even before any formal policy
+        # enforcement lands.
         run: |
-          git clone --depth 1 https://github.com/cisco-ai-defense/aibom /tmp/aibom
-          cd /tmp/aibom
-          pip install -e . || true
-          # Scan both services; if either returns an untracked-dependency
-          # error, the whole step fails via set -e.
-          python -m aibom scan "$GITHUB_WORKSPACE/app" --output /tmp/aibom-app.json
-          python -m aibom scan "$GITHUB_WORKSPACE/frontend" --output /tmp/aibom-frontend.json
+          set -eu
+          echo "## 🤖 AI/ML components detected" > aibom-summary.md
+          echo "" >> aibom-summary.md
+          echo '```' >> aibom-summary.md
+          if grep -hE "(langchain|anthropic|sentence-transformers|faiss|transformers|openai|huggingface|torch|numpy)" \
+                sbom-app.cdx.json sbom-frontend.cdx.json 2>/dev/null \
+                | sort -u | head -50 >> aibom-summary.md; then
+            :
+          else
+            echo "(none detected)" >> aibom-summary.md
+          fi
+          echo '```' >> aibom-summary.md
+          cat aibom-summary.md
 
-      - name: Upload AIBOM manifests
+      - name: Upload SBOMs as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aibom-manifests
-          path: /tmp/aibom-*.json
+          name: aibom-sboms
+          path: |
+            sbom-app.cdx.json
+            sbom-frontend.cdx.json
+            aibom-summary.md
           retention-days: 30
