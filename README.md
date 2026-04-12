@@ -4,7 +4,7 @@ A financial education chatbot wrapped in seven independent security layers. The 
 
 ## 🎯 The idea
 
-Money Honey answers personal finance questions in the voice of a nurturing-but-direct best friend. She grounds her answers in a small set of CFP / investment PDFs (local to the cluster, never exposed).
+Money Honey answers personal finance questions in the voice of a nurturing-but-direct best friend. She grounds every answer in a small set of PDFs loaded into the knowledge base (local to the cluster, never exposed).
 
 The project demonstrates a simple principle: **assume any one layer can fail, so no single layer gets to matter.** Treat the AI like an untrusted process and wrap it in independent controls that each do one job well.
 
@@ -74,7 +74,7 @@ npm install
 npm run dev                   # :3000 — Vite proxies /api to :8000
 ```
 
-Drop your PDFs into `app/knowledge_base/pdfs/` — they're gitignored so copyrighted CFP material never gets committed.
+Drop your PDFs into `app/knowledge_base/pdfs/` — the folder is gitignored so source material never gets committed.
 
 ## 🏗️ Deploy to Azure (when step 4 lands)
 
@@ -122,8 +122,5 @@ Read [`CLAUDE.md`](./CLAUDE.md) §Rules before editing anything. Every change st
 - [`CLAUDE.md`](./CLAUDE.md) — Architecture, rules, skill usage, tech stack, cost, build plan
 - [`docs/specs/chatbot-v1.md`](./docs/specs/chatbot-v1.md) — Application layer spec
 - [`docs/specs/infra-v1.md`](./docs/specs/infra-v1.md) — Terraform / Azure spec
-- [`docs/specs/cloudflare-access-v2.md`](./docs/specs/cloudflare-access-v2.md) — Zero-trust edge plan for v2
-
-## 💰 Cost (monthly, running)
-
-~$133–137/mo running (Cloudflare Free saves ~$18 vs. an Azure Standard LB). ~$65/mo when `az aks stop` is applied between demos.
+- [`docs/specs/cloudflare-access-v1.md`](./docs/specs/cloudflare-access-v1.md) — Zero-trust edge (Layer 8)
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Comprehensive security, development, and testing architecture
