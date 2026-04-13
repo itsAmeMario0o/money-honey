@@ -1,103 +1,132 @@
 # 📊 Current Build Status
 
-Last updated by the autonomous work block on 2026-04-12.
+Last updated 2026-04-13.
 
-## ✅ What's live in Azure right now
+## ✅ Azure resources live
 
 | Resource | Status | Cost |
 |---|---|---|
 | AKS `money-honey-aks` (K8s 1.34, 3× `Standard_B2s`, Cilium v1.18.6) | ✅ Running | ~$90/mo |
-| Tetragon DaemonSet (kube-system, 3/3 pods ready) | ✅ Running | $0 (on AKS nodes) |
-| VNet `money-honey-vnet` + subnets | ✅ | $0 |
-| Key Vault `mh-kv-w8fxwb` + 4 secret shells | ✅ | <$1/mo |
-| Splunk VM (Ubuntu 22.04, `Standard_B2ms`) | ✅ Running, Splunk not yet installed | ~$70/mo |
-| Splunk public IP (SSH only) | ✅ | $3.60/mo |
+| Tetragon DaemonSet (kube-system, 3/3 pods) | ✅ Running | $0 |
+| VNet `money-honey-vnet` + 2 subnets | ✅ | $0 |
+| Key Vault `mh-kv-w8fxwb` | ✅ | <$1/mo |
+| Splunk VM (Ubuntu 22.04, `Standard_B2ms`) + **Splunk Enterprise Free installed** | ✅ Running | ~$70/mo |
+| Splunk public IP (SSH only; web/HEC internal) | ✅ | $3.60/mo |
 | Terraform state SA `mhtfstatemjr26` | ✅ | <$1/mo |
-| **Rough total** | | **~$165/mo** |
+| Azure federated Service Principal `money-honey-ci` (OIDC for CI) | ✅ | $0 |
+| **Running total** | | **~$165/mo** |
 
-Well under the $250/mo cap.
+## ✅ AKS workloads live
 
-## ✅ What's live in AKS
-
-| Resource | Namespace | Count |
+| Resource | Namespace | Status |
 |---|---|---|
-| CiliumNetworkPolicies (default-deny + 7 allows) | money-honey | 8 |
-| TracingPolicyNamespaced (exec audit, tcp_connect audit, secrets-file audit) | money-honey | 3 |
-| SecretProviderClass (money-honey-secrets) | money-honey | 1 |
+| CiliumNetworkPolicies (default-deny + 7 allows) | money-honey | 8 valid |
+| TracingPolicies (exec allowlist, tcp_connect audit, secrets-file audit) | money-honey | 3 valid |
+| SecretProviderClass `money-honey-secrets` | money-honey | ✅ |
+| SecretProviderClass `observability-secrets` | kube-system | ✅ |
+| Fluent Bit DaemonSet (3/3, tailing Tetragon log, Splunk workers up) | kube-system | ✅ healthy, 0 events yet (TracingPolicies only emit on non-allowlisted exec) |
+| OTel Collector Deployment (scraping Tetragon `:2112`) | kube-system | ✅ running |
+| fastapi Deployment | money-honey | ⚠️ ImagePullBackOff — images not in GHCR yet |
+| react Deployment | money-honey | ⚠️ ImagePullBackOff — same |
+| caddy Deployment | money-honey | ⚠️ running 0/1 Ready (upstreams don't exist) |
+| cloudflared Deployment | money-honey | ⏳ **not applied** — blocked on Cloudflare tunnel tokens |
 
-Everything is `VALID = True`. Default-deny is active — any new pod starts with zero connectivity until an explicit allow matches it.
+## 🔐 Key Vault secrets
 
-## 📦 Manifests written but NOT yet applied
-
-All committed to main (`docs/specs/k8s-v1.md` has the rationale), all pass `kubectl apply --dry-run=client`:
-
-| Folder | Manifests | Why not applied |
-|---|---|---|
-| `k8s/app/` | `fastapi` Deployment + Service | Image `ghcr.io/itsamemario0o/money-honey-app:latest` not yet built — step 5 |
-| `k8s/frontend/` | `react` Deployment + Service | Same — step 5 |
-| `k8s/caddy/` | Caddy ConfigMap + Deployment + Service | Waits on upstreams (app + frontend) to exist |
-| `k8s/fluent-bit/` | ConfigMap + SA + DaemonSet | Needs a real `splunk-hec-token` in KV + the actual Splunk VM IP in the ConfigMap |
-| `k8s/otel/` | ConfigMap + SA + ClusterRole + Binding + Deployment | Same Splunk dependency |
-| `k8s/cloudflared/` | Deployment (2 replicas) | Needs real tunnel token populated in KV |
-
-## 🔜 Next steps (in order)
-
-### Step 5: CI/CD workflows — ✅ written, needs repo secrets before first real run
-Four workflows committed alongside the existing `quality.yaml`:
-- `docker-build.yaml` — Buildx + GHCR push, SHA + `:latest` tags, GHA cache
-- `deploy.yaml` — OIDC Azure login + `kubectl apply` scoped to `k8s/{app,frontend,caddy}`
-- `aibom.yaml` — Cisco AIBOM scan placeholder (verify action interface)
-- `hubness-scan.yaml` — Cisco Hubness Detector placeholder
-
-**Repo secrets operator must set:**
-- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (OIDC federated SP)
-- `WEBEX_BOT_TOKEN`, `WEBEX_ROOM_ID` (both gated with `if: secrets.X != ''` so absence is non-blocking)
-
-### Step 6: Jekyll docs site — ✅ core pages written
-- `docs/index.md` — landing page with three-domain framework
-- `docs/architecture/{overview,infrastructure,ai-security,developer-workflow}.md` — layer deep-dives
-- Setup + chatbot sub-pages are placeholders, fill in before public launch
-- Enable Pages: repo Settings → Pages → Source: `main` / `/docs`
-
-### Post-step-5 operator tasks (once CI has built images)
-1. Install Splunk on the VM:
-   ```bash
-   VM_IP=$(terraform -chdir=infra/terraform output -raw splunk_vm_public_ip)
-   CLOUDFLARED_TOKEN=$(az keyvault secret show \
-     --vault-name mh-kv-w8fxwb \
-     --name cloudflare-tunnel-splunk-token --query value -o tsv)
-   SPLUNK_ADMIN_PASSWORD='...' VM_IP=$VM_IP CLOUDFLARED_TOKEN=$CLOUDFLARED_TOKEN \
-     infra/scripts/install-splunk.sh
-   ```
-2. In the Splunk UI, create an HEC token for Fluent Bit.
-3. Populate the KV secrets:
-   ```bash
-   az keyvault secret set --vault-name mh-kv-w8fxwb --name anthropic-api-key --value 'sk-ant-...'
-   az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value '...'
-   az keyvault secret set --vault-name mh-kv-w8fxwb --name cloudflare-tunnel-chatbot-token --value '...'
-   ```
-4. Update the Fluent Bit + OTel ConfigMaps with the real Splunk VM private IP.
-5. Apply the app, observability, and cloudflared manifests.
-6. Configure the Public Hostname on each Cloudflare tunnel (dashboard step).
-
-## 🔬 Trivy baseline (local run before merging the workflow)
-
-| Scan | Result |
+| Secret | Status |
 |---|---|
-| `trivy fs` (dep scan) | ✅ **0 findings** after bumping `langchain-community` 0.3.5 → 0.3.27 (CVE-2025-6984 insecure XML parsing) and `black` 24.10.0 → 26.3.1 (CVE-2026-32274 arbitrary file writes). Would have blocked CI otherwise. |
-| `trivy config k8s/` (manifest scan, advisory) | ⚠️ 1 HIGH: `otel/configmap.yaml` has `token` as a YAML key (OTel exporter's required field name). Actual value is `${SPLUNK_HEC_TOKEN}` template placeholder substituted from env at runtime. Accepted as advisory — not a real secret leak. |
+| `splunk-hec-token` | ✅ **populated** (real HEC UUID) |
+| `anthropic-api-key` | ⏳ placeholder (`set-me-in-portal`) |
+| `cloudflare-tunnel-splunk-token` | ⏳ placeholder |
+| `cloudflare-tunnel-chatbot-token` | ⏳ placeholder |
 
-## 🩺 Diagnostics captured
+## 🤖 CI/CD state
 
-- Cilium connectivity test: 54/56 tests passed. 2 failures both are test-harness issues (encryption-test N/A; `/bin/sh` missing in distroless container). Actual networking is healthy.
-- Azure vCPU quota for `standardBasv2Family` was exhausted; pivoted to `standardBSFamily` (Standard_B2s). Documented in `project_design_decisions.md` memory.
-- AKS `local_account_disabled=false` for v1 so Terraform's Helm provider can auth via kube_admin_config; post-v1 hardening path uses kubelogin exec plugin.
-- Terraform state lock flakiness when runs are interrupted. Workaround: `az storage blob lease break` when `terraform force-unlock` won't do it.
+| Workflow | Status |
+|---|---|
+| `quality.yaml` (pytest, vitest, ruff, black, mypy, eslint, prettier, gitleaks, tfsec, Trivy fs + k8s) | 🚧 wired up; iterating on first-run errors |
+| `docker-build.yaml` (build + Trivy image scan + push to GHCR) | 🚧 in flight — just pushed the Alpine 3.23 + faiss-cpu 1.13.2 fixes |
+| `deploy.yaml` (OIDC Azure login + kubelogin + kubectl apply) | 🚧 SP verified; waits on images in GHCR |
+| `aibom.yaml` (Cisco AIBOM via uv tool install) | ⏳ blocked on `OPENAI_API_KEY` secret |
+| `hubness-scan.yaml` (Cisco Hubness Detector) | 📝 placeholder; wire up once real action interface confirmed |
 
-## 🛡️ Pre-flight rules I'm following now
+## 🛡️ Repo security posture
 
-From `.claude/memory/project_design_decisions.md`:
-1. Grep for stale refs (`seven layers`, `CFP`, `OpenAI`, hardcoded UUIDs) before doc-touching commits
-2. State implications before acting, not only when asked
-3. Update the design-decisions memory whenever a non-obvious choice lands
-4. Walk non-obvious decisions through proactively
+- Branch protection on `main`: force-push blocked, deletion blocked
+- GitHub Secret Protection + Push Protection: enabled
+- Local pre-commit hook: gitleaks + tfsec + ruff + black (runs on every commit)
+- `.trivyignore.yaml`: 1 scoped ignore (OTel ConfigMap `token:` false positive)
+- `.gitleaksignore`: 2 scoped ignores (tenant ID in SPC YAMLs)
+
+---
+
+## 🧭 What's next — ordered
+
+### Phase 1 — unblock the chatbot (your side, ~10 min total)
+
+1. **Anthropic API key** → store in Key Vault
+   ```zsh
+   read -s "ANTHROPIC_API_KEY?Anthropic key (sk-ant-...): "
+   echo
+   az keyvault secret set --vault-name mh-kv-w8fxwb --name anthropic-api-key --value "$ANTHROPIC_API_KEY"
+   unset ANTHROPIC_API_KEY
+   ```
+   Source: https://console.anthropic.com/settings/keys
+
+2. **Watch `docker-build.yaml`** finish. Expected: green on both backend + frontend. If Trivy catches Debian CVEs on the backend image, paste me the output and I'll bump `python:3.12-slim-bookworm` the same way I bumped the frontend.
+
+3. **Manually trigger `deploy.yaml`** once images are in GHCR. Will pull images, roll out fastapi/react/caddy. fastapi pods should then pull the Anthropic key from the CSI mount and become Ready.
+
+4. **Smoke-test the chat path from inside the cluster** (no public URL yet):
+   ```zsh
+   kubectl -n money-honey port-forward svc/caddy 8080:80
+   # New terminal:
+   curl -s -X POST http://localhost:8080/api/chat -H 'content-type: application/json' \
+     -d '{"message":"Hey, should I max out my 401k?"}' | jq
+   ```
+
+### Phase 2 — public access via Cloudflare (your side, ~20 min)
+
+5. **Populate the two Cloudflare tunnel tokens** (you already created them):
+   ```zsh
+   az keyvault secret set --vault-name mh-kv-w8fxwb --name cloudflare-tunnel-splunk-token  --value 'eyJ...splunk-tunnel-token...'
+   az keyvault secret set --vault-name mh-kv-w8fxwb --name cloudflare-tunnel-chatbot-token --value 'eyJ...chatbot-tunnel-token...'
+   ```
+
+6. **Re-run `install-splunk.sh` with the token** so cloudflared starts on the Splunk VM:
+   ```zsh
+   CLOUDFLARED_TOKEN=$(az keyvault secret show --vault-name mh-kv-w8fxwb --name cloudflare-tunnel-splunk-token --query value -o tsv) \
+     VM_IP=$(terraform -chdir=infra/terraform output -raw splunk_vm_public_ip) \
+     SPLUNK_ADMIN_PASSWORD='...' \
+     ./infra/scripts/install-splunk.sh
+   ```
+   Idempotent — won't reinstall Splunk, just adds the cloudflared service.
+
+7. **Apply the cloudflared Kubernetes Deployment** for the chatbot:
+   ```zsh
+   kubectl apply -f k8s/cloudflared/
+   ```
+   I'll update it first to point at the `observability-secrets`-pattern SPC (same approach as Fluent Bit — needs the Cloudflare tunnel token in the money-honey namespace).
+
+8. **Cloudflare dashboard: configure Public Hostname** for each tunnel once they show HEALTHY. Point `money-honey-chatbot` → `http://caddy.money-honey.svc.cluster.local:80`, `money-honey-splunk` → `http://localhost:8000`.
+
+9. **Cloudflare Access**: attach email-domain allowlist to each tunnel's Application (e.g. `*@cisco.com`, `*@gmail.com`).
+
+### Phase 3 — polish + public launch (both sides)
+
+10. **Populate `OPENAI_API_KEY`** as a GitHub repo secret so `aibom.yaml` runs.
+11. **Finish `.github/workflows/hubness-scan.yaml`** — verify the real Cisco Hubness action interface.
+12. **Enable GitHub Pages** (repo Settings → Pages → Source: `main` / `/docs`) — Jekyll docs site goes live.
+13. **Tighten branch protection**: require passing status checks (`Quality`, `Docker Build`, `Deploy`) on `main` once CI has 2–3 clean runs.
+14. **Flip advisory gates to blocking**: `trivy-k8s` job, `aibom.yaml`.
+15. **Fix the v1.1 backlog** in `docs/roadmap.md`: OTel `token_file:` refactor, Tetragon exportFilename simplification, CSI cross-namespace architecture cleanup.
+
+---
+
+## 🩺 Known quirks (for my own memory)
+
+- Tetragon log is at a doubled path (`/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log`) because the Helm chart concatenates `exportFilename` onto `exportDirectory`. Fluent Bit's tail config already accounts for it.
+- Fluent Bit runs as uid 0 because Tetragon writes the log as root and hostPath doesn't honor fsGroup. Still read-only rootfs + all caps dropped + no privesc.
+- Caddy needs `CAP_NET_BIND_SERVICE` to bind port 80 as uid 1000.
+- AKS API server is public (no IP allowlist) — AAD + RBAC is the gate. V2 path: private cluster + self-hosted runners.
+- `local_account_disabled = false` on AKS so Terraform's Helm provider can auth via `kube_admin_config`. Kubelogin+exec is the v2 hardening.
