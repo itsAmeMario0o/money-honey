@@ -1,45 +1,111 @@
+/* Money Honey — honey-warm palette with Dropzone-inspired techniques:
+   gradients, glow halos, fluid type, hex pattern overlay. Keeps the
+   Money Honey personality while landing a premium modern look. */
+
 :root {
+  /* Warm palette */
   --honey: #f7b733;
-  --bg: #1c1b1a;
-  --card: #262523;
+  --honey-bright: #ffb84d;
+  --honey-deep: #e5a800;
+  --amber-glow: rgba(247, 183, 51, 0.35);
+
+  /* Surfaces */
+  --bg-base: #14110f;
+  --bg-warm: #1c1817;
+  --card: rgba(38, 37, 35, 0.72);
+  --card-border: rgba(247, 183, 51, 0.08);
+
+  /* Text */
   --text: #f4efe6;
   --muted: #a29d93;
-  --user: #3a362f;
-  --assistant: #4a3a10;
+  --dim: rgba(244, 239, 230, 0.5);
+
+  /* Bubbles */
+  --user-bg: rgba(58, 54, 47, 0.85);
+  --assistant-bg-a: rgba(74, 58, 16, 0.85);
+  --assistant-bg-b: rgba(38, 29, 10, 0.85);
+
+  /* Tokens */
+  --grad-honey-diag: linear-gradient(135deg, var(--honey-bright), var(--honey-deep));
+  --grad-bg-radial: radial-gradient(
+    ellipse at top,
+    #2a1f12 0%,
+    var(--bg-warm) 45%,
+    var(--bg-base) 100%
+  );
+  --glow-honey: 0 0 40px var(--amber-glow);
+  --glow-honey-strong: 0 0 60px rgba(247, 183, 51, 0.5);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
+  min-height: 100vh;
+  font-family:
+    "Space Grotesk",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: var(--grad-bg-radial);
   color: var(--text);
+  /* Faint hex-grid overlay for texture. Inline SVG is a data URI so there's
+     no extra network request. Tiny opacity keeps it from fighting content. */
+  background-image: var(--grad-bg-radial),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'><path d='M15 0 L45 0 L60 26 L45 52 L15 52 L0 26 Z' fill='none' stroke='%23f7b733' stroke-opacity='0.04' stroke-width='1'/></svg>");
+  background-attachment: fixed;
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 24px;
+  padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 32px);
+}
+
+.app-header {
+  margin-bottom: clamp(18px, 3vw, 28px);
+  position: relative;
 }
 
 .app-header h1 {
   margin: 0;
-  color: var(--honey);
+  font-size: clamp(2.25rem, 5vw + 1rem, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  background: var(--grad-honey-diag);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Subtle glow behind the text. Layering filter drop-shadow picks up
+     the gradient color, not a flat shadow. */
+  filter: drop-shadow(0 0 24px var(--amber-glow));
 }
 
 .app-header p {
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 6px;
+  font-size: clamp(0.95rem, 1.2vw + 0.5rem, 1.1rem);
+  letter-spacing: 0.01em;
 }
 
 .chat-window {
   margin-top: 24px;
   background: var(--card);
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: clamp(16px, 2vw, 24px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .chat-history {
@@ -49,68 +115,130 @@ body {
   min-height: 320px;
   max-height: 60vh;
   overflow-y: auto;
+  /* Custom scrollbar (WebKit-based browsers) */
+  scrollbar-color: var(--honey) transparent;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+.chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-history::-webkit-scrollbar-thumb {
+  background: var(--honey);
+  border-radius: 3px;
 }
 
 .bubble {
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   max-width: 85%;
+  font-size: clamp(0.95rem, 1vw + 0.4rem, 1.05rem);
 }
 
 .bubble.user {
-  background: var(--user);
+  background: var(--user-bg);
   align-self: flex-end;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .bubble.assistant {
-  background: var(--assistant);
+  background: linear-gradient(135deg, var(--assistant-bg-a), var(--assistant-bg-b));
   align-self: flex-start;
+  /* Honey border accent on the leading edge — subtle brand signature */
+  border-left: 2px solid var(--honey);
+  position: relative;
 }
 
 .bubble-role {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.bubble.assistant .bubble-role {
+  color: var(--honey);
 }
 
 .bubble-text {
   white-space: pre-wrap;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .chat-input-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-top: 16px;
+  align-items: stretch;
 }
 
 .chat-input {
   flex: 1;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #3a3833;
-  background: var(--bg);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 17, 15, 0.6);
   color: var(--text);
   font-size: 15px;
+  font-family: inherit;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--honey);
+  box-shadow: 0 0 0 3px var(--amber-glow);
+}
+
+.chat-input::placeholder {
+  color: var(--dim);
 }
 
 .chat-send {
-  padding: 12px 20px;
+  padding: 0 22px;
   border: none;
-  border-radius: 8px;
-  background: var(--honey);
-  color: #111;
-  font-weight: 600;
+  border-radius: 10px;
+  background: var(--grad-honey-diag);
+  color: #0f0a02;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  position: relative;
+  box-shadow: var(--glow-honey);
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 120ms ease;
+}
+
+.chat-send:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-honey-strong);
+  filter: brightness(1.06);
+}
+
+.chat-send:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .chat-send:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  filter: grayscale(0.3);
 }
 
 .chat-error {
-  color: #ff7b7b;
+  color: #ff8a8a;
   font-size: 14px;
-  margin-top: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 138, 138, 0.08);
+  border-left: 2px solid #ff8a8a;
+  border-radius: 6px;
 }
