@@ -72,6 +72,9 @@ jobs:
           # Authenticated GitHub API calls — prevents rate-limited
           # downloads of the Trivy binary + DB from GitHub releases.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Honor the same scoped ignores quality.yaml uses (e.g.
+          # the langchain-core 0.3.x CVE we don't actually exercise).
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           image-ref: money-honey-app:ci-scan
           format: table
@@ -127,6 +130,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           image-ref: money-honey-frontend:ci-scan
           format: table

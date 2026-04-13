@@ -51,6 +51,9 @@ Deferred on purpose from v1 — each is a clean follow-on project.
 - **Multi-language support** — English-only in v1.
 - **Hybrid search** (BM25 + vector) — if corpus grows past ~50 docs.
 - **Persisted FAISS index** on an Azure File share — skip the rebuild on pod restart.
+- **Bump fastapi 0.115.0 → 0.116+** so the starlette pin can move to 0.40.0+ and clear CVE-2024-47874 in `.trivyignore.yaml`. Currently safe because we expose JSON-only endpoints (no multipart parser invoked), but the dependency-tree refresh is overdue.
+
+- **Migrate langchain 0.3.x → 1.x** — currently pinned to 0.3.27 because the sub-packages cohere there. langchain-core 1.2.22 fixes CVE-2026-34070 (path traversal in legacy `load_prompt`). We're not exposed (don't call the function — see `.trivyignore.yaml` rationale), but a clean migration eliminates the ignore and gets us on a maintained line. Major-version bump means breaking API changes; budget a real iteration.
 
 ### Observability
 

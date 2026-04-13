@@ -20,6 +20,15 @@ RUN python -m venv /opt/venv \
 
 FROM python:3.12-slim-bookworm AS runtime
 
+# Pull any Debian package fixes released since the base image tag was
+# cut. Belt-and-suspenders against CVE drift between tag refreshes
+# (e.g. CVE-2026-28390 in libssl3 was patched after the 3.12-slim-bookworm
+# pin we're on). Cleans apt lists to keep the image small.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Non-root user per CLAUDE.md Dockerfile rules
 RUN useradd --create-home --uid 10001 honey
 

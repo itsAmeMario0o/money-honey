@@ -1,6 +1,34 @@
 # Trivy ignore file (structured format, Trivy >= 0.52).
 # Scoped ignores only — never blanket-ignore a rule.
 
+vulnerabilities:
+  - id: CVE-2024-47874
+    # starlette 0.38.6 (pulled in transitively by fastapi 0.115.0) has
+    # a DoS vulnerability in multipart/form-data parsing. Our FastAPI
+    # backend exposes only `/api/health` (GET) and `/api/chat` (POST,
+    # application/json with a Pydantic ChatRequest). No endpoint
+    # accepts multipart/form-data, so the vulnerable parser is never
+    # invoked in our deployed surface.
+    #
+    # The fix is in starlette 0.40.0+ but fastapi 0.115.0 caps
+    # starlette at <0.39.0. Real remediation = bump fastapi to a
+    # version that allows starlette 0.40+ (likely 0.116+); planned
+    # for v1.1 dependency sweep.
+    expiredAt: "2026-12-31"
+
+  - id: CVE-2026-34070
+    # langchain-core 0.3.84 has a path-traversal vulnerability in the
+    # legacy `load_prompt` function. Fix is in 1.2.22, which would
+    # require migrating the entire langchain ecosystem from 0.3.x to
+    # 1.x. We don't call `load_prompt` (or any langchain prompt-loading
+    # helpers) anywhere in the codebase — `app/personality.py` defines
+    # the system prompt as a Python string literal, and the chat path
+    # in `app/main.py` constructs messages directly. Risk surface is
+    # zero unless we adopt prompt-loading from disk in the future.
+    #
+    # Re-evaluate once we plan the langchain 0.3 -> 1.x migration in v2.
+    expiredAt: "2026-12-31"
+
 misconfigurations:
   - id: AVD-KSV-0109
     paths:
