@@ -12,8 +12,8 @@ python-dotenv==1.0.1
 # allow the smaller sub-packages to float within their compatible minors
 # so pip's resolver can pick a consistent langchain-core without needing
 # a lock file. Stays on the 0.3 line; 1.x would require bigger changes.
-langchain==0.3.27
-langchain-community==0.3.27
+langchain>=0.3.27,<0.4.0
+langchain-community>=0.3.27,<0.4.0
 langchain-anthropic>=0.3.15,<0.4.0
 langchain-huggingface>=0.3.1,<0.4.0
 sentence-transformers==3.3.1
