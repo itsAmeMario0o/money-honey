@@ -19,6 +19,10 @@ on:
       - k8s/caddy/**
       - app/**
       - frontend/**
+  # Allow a one-off manual trigger from the Actions UI. Handy for
+  # verifying the SP + OIDC trust end-to-end without needing a real
+  # code change or pre-built images.
+  workflow_dispatch:
 
 permissions:
   contents: read
