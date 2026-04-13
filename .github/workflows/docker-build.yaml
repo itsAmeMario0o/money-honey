@@ -62,7 +62,7 @@ jobs:
 
       # Stage 2: scan the locally-built image. Fails HIGH + CRITICAL.
       - name: Trivy — scan backend image
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.35.0
         env:
           # Authenticated GitHub API calls — prevents rate-limited
           # downloads of the Trivy binary + DB from GitHub releases.
@@ -116,7 +116,7 @@ jobs:
           tags: money-honey-frontend:ci-scan
 
       - name: Trivy — scan frontend image
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.35.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
