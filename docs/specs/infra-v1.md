@@ -21,7 +21,7 @@ Step 3 of the build plan defines every Azure resource Money Honey needs as Terra
 CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 - Managed AKS with Azure CNI powered by Cilium (no BYOCNI, no Hubble, no ACNS) — lines 202–212
 - Tetragon installed via Helm, chart `1.3.0` — lines 217–218
-- Worker nodes: 3× `Standard_B2als_v2` — line 221
+- Worker nodes: 3× `Standard_B2s` (originally planned `Standard_B2als_v2`; switched at apply time because eastus `standardBasv2Family` quota was exhausted)
 - Splunk on its own VM (`Standard_B2ms`) — lines 351–353
 - Squarespace CNAME is managed manually; Terraform only outputs the LB IP — line 196
 
@@ -47,7 +47,7 @@ CLAUDE.md §"Tech Stack" and §"Architecture Decisions" pin the choices:
 | **FR-5** | The cluster name MUST be `money-honey-aks`. |
 | **FR-6** | Kubernetes version MUST be `1.34` or newer (line 184). |
 | **FR-7** | The cluster MUST use `network_plugin = "azure"`, `network_plugin_mode = "overlay"`, `network_data_plane = "cilium"`, `network_policy = "cilium"` (line 287). |
-| **FR-8** | The default node pool MUST have 3 nodes of SKU `Standard_B2als_v2` (line 221). |
+| **FR-8** | The default node pool MUST have 3 nodes. SKU defaults to `Standard_B2s` (operator can override via `node_sku` variable; `Standard_B2als_v2` was the original spec value but eastus quota required the swap). |
 | **FR-9** | The cluster MUST use System-Assigned Managed Identity (no service principal passwords, line 59). |
 | **FR-10** | RBAC MUST be enabled with Azure AD integration (Entra ID). |
 | **FR-11** | The cluster MUST have the `azurekeyvaultsecretsprovider` (CSI Secret Store Driver) add-on enabled. |
@@ -159,7 +159,7 @@ variable "environment"         { type = string, default = "demo" }
 variable "cluster_name"        { type = string, default = "money-honey-aks" }
 variable "kubernetes_version"  { type = string, default = "1.34" }
 variable "node_count"          { type = number, default = 3 }
-variable "node_sku"            { type = string, default = "Standard_B2als_v2" }
+variable "node_sku"            { type = string, default = "Standard_B2s" }
 
 variable "key_vault_name_prefix" { type = string, default = "mh-kv" }
 

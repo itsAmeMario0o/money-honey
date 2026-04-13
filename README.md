@@ -27,32 +27,38 @@ Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, pret
 
 | Area | Technology |
 |---|---|
-| Frontend | React 18 + Vite + TypeScript |
+| Frontend | React 18 + Vite + TypeScript, Space Grotesk type, gradient + glow design system |
 | Backend | FastAPI (Python 3.12) |
-| RAG | LangChain + FAISS, local `sentence-transformers/all-MiniLM-L6-v2` embeddings |
+| RAG | LangChain 0.3.x + FAISS, local `sentence-transformers/all-MiniLM-L6-v2` embeddings |
 | LLM | Anthropic Claude (Haiku 4.5) |
-| Platform | Azure Kubernetes Service with Cilium data plane |
-| Runtime security | Tetragon (eBPF, DaemonSet) |
-| Secrets | Azure Key Vault + CSI Secret Store Driver |
+| Platform | Azure Kubernetes Service with Cilium data plane (Cilium 1.18.6) |
+| Runtime security | Tetragon (eBPF, DaemonSet) with namespaced TracingPolicies |
+| Secrets | Azure Key Vault + CSI Secret Store Driver (managed identity) |
 | Observability | Fluent Bit + OpenTelemetry → Splunk Enterprise Free (Ubuntu 22.04 VM) |
 | Public edge | Cloudflare Tunnel + Zero Trust (Free plan) |
 | IaC | Terraform (AzureRM 4.x) with remote state in Azure Blob |
-| CI/CD | GitHub Actions, GHCR for images |
-| Registry | GitHub Container Registry |
+| CI/CD | GitHub Actions (quality, docker-build, deploy, aibom, hubness-scan) + Dependabot |
+| Registry | GitHub Container Registry (public packages) |
+| Image scan | Trivy (image, filesystem, k8s manifest) |
+| AI BOM | Cisco AI Defense `cisco-aibom` (PyPI) |
 | Docs | GitHub Pages (Jekyll / Merlot theme) |
 | Code quality | black, ruff, mypy, pytest (Python); prettier, eslint, tsc, vitest (TypeScript) |
+| Pre-commit | gitleaks, tfsec, ruff, black + scoped `.trivyignore.yaml` / `.gitleaksignore` |
 
 ## 🚦 Current status
 
 | Step | Status |
 |---|---|
 | 1. Repo scaffold | ✅ Done |
-| 2. Application layer (FastAPI + React) | ✅ Done |
-| 3. Infrastructure (Terraform) | ✅ Done — AKS + KV + VNet + Splunk VM applied to Azure |
-| 4. Kubernetes manifests | 🚧 All manifests written + dry-run clean. Safe subset (ns, CNPs, TracingPolicies, SPC) applied. App Deployments blocked on step 5 (images). |
-| 5. CI/CD workflows | 🚧 All 4 workflows written (docker-build, deploy, aibom, hubness-scan). Need repo secrets (AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, Webex) before first real run. |
-| 6. Jekyll docs site | 🚧 Landing page + architecture deep-dives written; setup/chatbot sub-pages are placeholders. Enable in Settings → Pages when ready. |
-| 3a. Cloudflare Tunnel (Layer 8) | 🚧 Tokens in Key Vault, cloudflared on Splunk VM script ready. Chatbot tunnel pod manifest written. |
+| 2. Application layer (FastAPI + React) | ✅ Done — frontend redesign with gradient/glow palette landed |
+| 3. Infrastructure (Terraform) | ✅ Applied to Azure — AKS, KV, VNet, Splunk VM all live |
+| 4. Kubernetes manifests | ✅ All manifests applied — namespace, 8 CNPs, 3 TracingPolicies, 2 SPCs, Fluent Bit, OTel, Caddy, fastapi/react Deployments. App pods waiting on first successful image pull. |
+| 5. CI/CD workflows | ✅ Active — quality + docker-build + deploy + aibom + hubness-scan all wired. Azure SP federated, kubelogin in deploy, Trivy in build, scoped ignores in `.trivyignore.yaml`. |
+| 6. Jekyll docs site | 🚧 Landing page + architecture deep-dives + setup walkthroughs written. Enable Pages in Settings when ready for public docs. |
+| Cloudflare Tunnel (Layer 8) | 🚧 Splunk VM tunnel installed; chatbot tunnel pod manifest written. Tokens still placeholder in KV. Public Hostname routing pending operator. |
+| Splunk install | ✅ Splunk Enterprise Free running, HEC token populated in KV |
+| Anthropic key | ⏳ KV placeholder — operator-supplied when ready |
+| Branch protection | ✅ Force-push + deletion blocked on `main` |
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, build plan, and Claude Code session rules.
 
