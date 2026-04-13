@@ -53,15 +53,41 @@ Accept the self-signed cert warning (Splunk Web runs HTTPS on port 8000 by defau
 
 ## Create an HEC token for Fluent Bit + OTel
 
-Fluent Bit and OTel Collector both post events to Splunk's HTTP Event Collector. You need a token:
+Fluent Bit and OTel Collector both post events to Splunk's HTTP Event Collector. You need a token.
 
-1. In Splunk UI → **Settings → Data Inputs → HTTP Event Collector**
-2. Click **New Token**
-3. Name: `money-honey-aks`
-4. Source type: `_json` (our Tetragon events arrive as JSON)
-5. Default index: `main` (or create a dedicated `tetragon` index)
-6. **Review + Submit** — copy the token
-7. Save it; you'll paste it into Key Vault next (`docs/setup/kv-secrets.md`)
+### Option A — one-liner (recommended)
+
+Creates the token via Splunk CLI over SSH, extracts the UUID, writes it to Key Vault. Requires `SPLUNK_ADMIN_PASSWORD` already exported in your shell:
+
+```zsh
+HEC_TOKEN=$(ssh -i infra/private_key/splunk.pem -o StrictHostKeyChecking=no \
+    azureuser@$(terraform -chdir=infra/terraform output -raw splunk_vm_public_ip) \
+    "sudo /opt/splunk/bin/splunk http-event-collector create \
+       -name money-honey-aks \
+       -description 'AKS Tetragon events' \
+       -index main \
+       -sourcetype _json \
+       -uri https://127.0.0.1:8089 \
+       -auth admin:$SPLUNK_ADMIN_PASSWORD" \
+  | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+
+echo "HEC token: $HEC_TOKEN"
+
+az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value "$HEC_TOKEN"
+```
+
+The `grep -oE` matches a bare UUID — avoids storing the CLI's `token=<uuid>` prefix which would break HEC auth headers.
+
+### Option B — via the Splunk UI
+
+1. Open via SSH port-forward: `ssh -i infra/private_key/splunk.pem -L 8000:localhost:8000 azureuser@<VM_IP>` then browse to http://localhost:8000
+2. **Settings → Data Inputs → HTTP Event Collector**
+3. Click **New Token**
+4. Name: `money-honey-aks`
+5. Source type: `_json`
+6. Default index: `main` (or create `tetragon`)
+7. **Review + Submit** — copy the token (just the UUID, not any prefix)
+8. Store it: `az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value '<uuid>'`
 
 ## Harden post-install (quick wins)
 
