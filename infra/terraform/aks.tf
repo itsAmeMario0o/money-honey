@@ -6,7 +6,7 @@
 data "azurerm_client_config" "current" {}
 
 # tfsec:ignore:azure-container-logging -- Splunk (via Fluent Bit + OTel) is the log pipeline, not Azure Monitor. See CLAUDE.md Layer 7.
-# tfsec:ignore:azure-container-limit-authorized-ips -- tfsec v1.28 checks the legacy api_server_authorized_ip_ranges attribute; we use api_server_access_profile.authorized_ip_ranges (AzureRM 4.x) which is equivalent and set to local.operator_ip_cidr below.
+# tfsec:ignore:azure-container-limit-authorized-ips -- API server is public by design for v1; identity gate is Azure AD + Azure RBAC for Kubernetes. Private cluster + self-hosted runners is the v2 path. See comment in aks.tf where api_server_access_profile would live.
 resource "azurerm_kubernetes_cluster" "money_honey" {
   name                = var.cluster_name
   location            = azurerm_resource_group.money_honey.location
@@ -65,12 +65,16 @@ resource "azurerm_kubernetes_cluster" "money_honey" {
     secret_rotation_interval = "5m"
   }
 
-  // Limit Kubernetes API access to the operator's current IP. Anyone else
-  // hitting the API server gets a network-level reject. In step 5 we'll
-  // add the GitHub Actions runner CIDRs here so CI can kubectl apply.
-  api_server_access_profile {
-    authorized_ip_ranges = [local.operator_ip_cidr]
-  }
+  // API server access:
+  //   - Identity: Azure AD + Azure RBAC for Kubernetes (primary gate).
+  //   - Network: public, no IP allowlist. GitHub Actions runners need
+  //     to reach the API to kubectl apply, and their CIDRs are too
+  //     broad/churny to maintain as an allowlist. Azure RBAC + SP
+  //     scoping is the real perimeter here.
+  //   - v2 hardening path: private AKS cluster + self-hosted runners
+  //     inside the VNet. That's the only way to have both a narrow
+  //     network perimeter AND working CI.
+  // No api_server_access_profile block = no IP restriction (Azure default).
 
   tags = local.common_tags
 }
