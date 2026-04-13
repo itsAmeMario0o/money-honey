@@ -2,7 +2,7 @@
 # Stage 1 builds the static bundle with Node.
 # Stage 2 serves the bundle with nginx.
 
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /build
 
