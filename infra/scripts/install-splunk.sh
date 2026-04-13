@@ -81,7 +81,7 @@ if [ -n "${CLOUDFLARED_TOKEN:-}" ]; then
     curl -sSL -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
     sudo dpkg -i /tmp/cloudflared.deb
     rm -f /tmp/cloudflared.deb
-    sudo cloudflared service install "${CLOUDFLARED_TOKEN}"
+    sudo cloudflared service install "${CLOUDFLARED_TOKEN:-}"
   fi
   sudo systemctl enable --now cloudflared
 else
