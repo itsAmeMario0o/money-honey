@@ -2,7 +2,7 @@
 # Stage 1 installs dependencies into a clean virtualenv.
 # Stage 2 copies only the venv and app code into a minimal runtime image.
 
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 WORKDIR /build
 
@@ -18,7 +18,7 @@ RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS runtime
 
 # Pull any Debian package fixes released since the base image tag was
 # cut. Belt-and-suspenders against CVE drift between tag refreshes
