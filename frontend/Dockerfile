@@ -15,7 +15,12 @@ COPY . .
 RUN npm run build
 
 
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.29.6-alpine3.23 AS runtime
+
+# Pick up any Alpine package fixes released since the image tag was
+# cut. Belt-and-suspenders against base-image CVE drift between tag
+# refreshes. Clears the apk cache to keep the image small.
+RUN apk upgrade --no-cache
 
 # Non-root user per CLAUDE.md Dockerfile rules
 RUN adduser -D -u 10001 honey
