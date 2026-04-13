@@ -52,6 +52,10 @@ Deferred on purpose from v1 — each is a clean follow-on project.
 - **Hybrid search** (BM25 + vector) — if corpus grows past ~50 docs.
 - **Persisted FAISS index** on an Azure File share — skip the rebuild on pod restart.
 
+### Observability
+
+- **OTel `token_file:` refactor** — replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. Removes the env-var / K8s-Secret hop entirely (the token never sits in a Pod env or K8s Secret object — it only exists as a file mounted from Key Vault). Lets us delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
+
 ### Developer workflow
 
 - **cosign** image signing + `policy-controller` verification on AKS admission.

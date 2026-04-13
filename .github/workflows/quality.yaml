@@ -150,6 +150,10 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Scoped-ignore file at repo root. Each entry has a reason
+          # and an expiredAt date so ignores don't become permanent
+          # blind spots.
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           scan-type: config
           scan-ref: k8s
