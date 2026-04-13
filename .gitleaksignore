@@ -1,0 +1,10 @@
+# Gitleaks ignore file. One fingerprint per line.
+# Format: <file>:<rule-id>:<line-number>
+#
+# Only add entries here after confirming the finding is a known
+# false positive. Document the reason in a comment above the line.
+
+# Azure Entra tenantId for mariojruiz.com — public identifier required
+# by the CSI driver's SecretProviderClass spec; not a credential.
+k8s/secrets/secretproviderclass.yaml:azure-subscription-id:30
+k8s/secrets/secretproviderclass-observability.yaml:azure-subscription-id:22

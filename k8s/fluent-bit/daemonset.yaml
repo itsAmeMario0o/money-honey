@@ -33,12 +33,17 @@ spec:
         part-of: money-honey
     spec:
       serviceAccountName: fluent-bit
-      # Host mount of Tetragon's log path needs this tolerance on
-      # the node's security context. We stay non-root where possible.
+      # Tetragon writes its JSON log as root on the node. Log-collector
+      # DaemonSets typically run as root with a read-only rootfs; that's
+      # the posture we adopt here. Non-root options considered:
+      # - CAP_DAC_READ_SEARCH — still needs privileged mode on most nodes
+      # - fsGroup on the hostPath — hostPath doesn't honour fsGroup
+      # - Tetragon logfile ownership change — Tetragon owns the file
+      # Accepted trade-off: Fluent Bit runs as root, with read-only
+      # rootfs, all caps dropped, and no privilege escalation.
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 0
+        fsGroup: 0
       containers:
         - name: fluent-bit
           image: fluent/fluent-bit:3.1.10
@@ -68,6 +73,12 @@ spec:
               readOnly: true
             - name: varlog
               mountPath: /var/log
+            # CSI mount triggers the K8s-Secret sync for splunk-hec in
+            # kube-system. Fluent Bit consumes SPLUNK_HEC_TOKEN from the
+            # synced Secret via secretKeyRef above, not from this path.
+            - name: kv-secrets
+              mountPath: /mnt/secrets
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -90,6 +101,12 @@ spec:
             type: Directory
         - name: varlog
           emptyDir: {}
+        - name: kv-secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: observability-secrets
       # Fluent Bit is in kube-system, not money-honey, so our
       # CiliumNetworkPolicy default-deny doesn't apply here. The pod
       # needs egress to Splunk HEC on the VM — covered by default

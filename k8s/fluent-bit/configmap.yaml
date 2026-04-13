@@ -20,7 +20,13 @@ data:
 
     [INPUT]
         Name              tail
-        Path              /var/run/cilium/tetragon/tetragon.log
+        # Tetragon's Helm chart appends `exportFilename` to its
+        # `exportDirectory` (both default to /var/run/cilium/tetragon).
+        # We set exportFilename to a full path in terraform, which
+        # causes the dir to appear twice in the final location. Ugly
+        # but harmless; the real file is at this nested path. Fix the
+        # chart values in v1.1.
+        Path              /var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log
         Parser            json
         Tag               tetragon.*
         Refresh_Interval  5

@@ -93,6 +93,10 @@ spec:
             - name: config
               mountPath: /conf
               readOnly: true
+            # CSI mount triggers Secret sync for splunk-hec in kube-system.
+            - name: kv-secrets
+              mountPath: /mnt/secrets
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /
@@ -114,3 +118,9 @@ spec:
         - name: config
           configMap:
             name: otel-config
+        - name: kv-secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: observability-secrets
