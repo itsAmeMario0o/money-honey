@@ -138,13 +138,13 @@ After closing #15 and #16, the rest will clear naturally as they either pass CI 
 12. **Enable GitHub Pages** (repo Settings → Pages → Source: `main` / `/docs`) — Jekyll docs site goes live.
 13. **Tighten branch protection**: require passing status checks (`Quality`, `Docker Build`, `Deploy`) on `main` once CI has 2–3 clean runs.
 14. **Flip advisory gates to blocking**: `trivy-k8s` job, `aibom.yaml`.
-15. **Fix the v1.1 backlog** in `docs/roadmap.md`: OTel `token_file:` refactor, Tetragon exportFilename simplification, CSI cross-namespace architecture cleanup.
+15. **Fix the v1.1 backlog** in `docs/roadmap.md`: CSI cross-namespace architecture cleanup. _(OTel `${file:...}` token refactor and Tetragon `exportFilename` simplification landed on 2026-04-13.)_
 
 ---
 
 ## 🩺 Known quirks (for my own memory)
 
-- Tetragon log is at a doubled path (`/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log`) because the Helm chart concatenates `exportFilename` onto `exportDirectory`. Fluent Bit's tail config already accounts for it.
+- Tetragon log lives at `/var/run/cilium/tetragon/tetragon.log` on each node. `exportFilename` in tetragon.tf is now just the filename (not a full path) so the Helm chart produces a clean directory layout.
 - Fluent Bit runs as uid 0 because Tetragon writes the log as root and hostPath doesn't honor fsGroup. Still read-only rootfs + all caps dropped + no privesc.
 - Caddy needs `CAP_NET_BIND_SERVICE` to bind port 80 as uid 1000.
 - AKS API server is public (no IP allowlist) — AAD + RBAC is the gate. V2 path: private cluster + self-hosted runners.
