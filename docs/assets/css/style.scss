@@ -110,28 +110,53 @@ pre {
 code { padding: 0.1em 0.35em; }
 
 /* Tables -------------------------------------------------------------- */
+/* High specificity + !important to beat Merlot's defaults. */
 
-table {
-  background: var(--card);
-  border: 1px solid var(--card-border);
+body table,
+body table tbody,
+body table thead,
+body table tr {
+  background: var(--card) !important;
+  border-color: var(--card-border) !important;
+}
+
+body table {
+  border: 1px solid var(--card-border) !important;
   border-radius: 8px;
   overflow: hidden;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  width: 100%;
 }
 
-table th {
-  background: rgba(247, 183, 51, 0.08);
-  color: var(--honey-bright);
+body table th {
+  background: rgba(247, 183, 51, 0.10) !important;
+  color: var(--honey-bright) !important;
   font-weight: 600;
-  border-bottom: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border) !important;
+  padding: 0.6rem 0.85rem;
+  text-align: left;
 }
 
-table td, table th {
-  color: var(--text);
-  border-color: var(--card-border);
+body table td {
+  color: var(--text) !important;
+  background: transparent !important;
+  border-top: 1px solid var(--card-border) !important;
+  padding: 0.6rem 0.85rem;
 }
 
-table tr:nth-child(even) td {
-  background: rgba(255, 255, 255, 0.02);
+body table td code,
+body table th code {
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffd48a;
+}
+
+body table tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+body table a {
+  color: var(--honey-bright) !important;
 }
 
 /* Blockquotes + horizontal rules ------------------------------------- */
