@@ -60,6 +60,25 @@ Last updated 2026-04-13.
 
 ---
 
+## 🧹 Dependabot PR triage (manual close/merge recommended)
+
+| # | What | Recommendation |
+|---|---|---|
+| #15 | langchain-anthropic range bump → likely 1.x | **Close.** Would break our 0.3.x langchain pin. |
+| #16 | langchain-huggingface range bump → likely 1.x | **Close.** Same reason. |
+| #13 | vite 5 → 8 (major) | Review. Major jump; needs build test. |
+| #18 | jsdom 25 → 29 (major) | Review. Affects vitest test runner; needs test run. |
+| #19 | azure/aks-set-context 4 → 5 (major) | Review. Known to change inputs. |
+| #21 | python-minor-patch group | Rebase onto current main (our fixes make this pass). |
+| #17 | react + @types/react | Review — check compat with React 18 choices. |
+| #14 | pytest-asyncio 0.25 → 1.3 (major) | Review — might need test adjustments. |
+| #12 | pypdf 5.1 → 6.10 (major) | Review — API changes possible. |
+| #10 | eslint-plugin-react-hooks 5.1 → ? | Likely safe. Merge if CI green. |
+
+After closing #15 and #16, the rest will clear naturally as they either pass CI or expire. Open list: https://github.com/itsAmeMario0o/money-honey/pulls
+
+---
+
 ## 🧭 What's next — ordered
 
 ### Phase 1 — unblock the chatbot (your side, ~10 min total)
