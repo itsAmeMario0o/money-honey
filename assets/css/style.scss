@@ -1,0 +1,167 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Money Honey — align the Merlot theme with the frontend design system.
+   Palette mirrors frontend/src/App.css: warm dark background, honey gold
+   accents, amber glow, cream text. */
+
+:root {
+  --honey:          #f7b733;
+  --honey-bright:   #ffb84d;
+  --honey-deep:     #e5a800;
+  --amber-glow:     rgba(247, 183, 51, 0.35);
+  --bg-base:        #14110f;
+  --bg-warm:        #1c1817;
+  --card:           rgba(38, 37, 35, 0.72);
+  --card-border:    rgba(247, 183, 51, 0.12);
+  --text:           #f4efe6;
+  --muted:          #a29d93;
+  --dim:            rgba(244, 239, 230, 0.5);
+  --grad-honey:     linear-gradient(135deg, var(--honey-bright), var(--honey-deep));
+  --grad-bg:        radial-gradient(var(--bg-warm) 45%, var(--bg-base) 100%);
+  --glow-honey:     0 0 40px var(--amber-glow);
+}
+
+/* Page chrome --------------------------------------------------------- */
+
+body {
+  background: var(--grad-bg) fixed;
+  color: var(--text);
+  font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.wrapper {
+  max-width: 960px;
+}
+
+header {
+  background: transparent;
+  border-bottom: 1px solid var(--card-border);
+}
+
+header h1 {
+  background: var(--grad-honey);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 24px var(--amber-glow));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+header h2, header p {
+  color: var(--muted);
+}
+
+/* Body headings ------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1, h2 {
+  background: var(--grad-honey);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+}
+
+h3 { color: var(--honey-bright); }
+h4 { color: var(--honey); }
+
+/* Links --------------------------------------------------------------- */
+
+a {
+  color: var(--honey-bright);
+  transition: color 120ms ease, text-shadow 120ms ease;
+}
+
+a:hover,
+a:focus {
+  color: #fff;
+  text-shadow: var(--glow-honey);
+  text-decoration: none;
+}
+
+/* Code blocks --------------------------------------------------------- */
+
+pre,
+code {
+  background: #0f0d0c;
+  color: #ffd48a;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+               monospace;
+}
+
+pre {
+  padding: 1rem;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.35);
+}
+
+code { padding: 0.1em 0.35em; }
+
+/* Tables -------------------------------------------------------------- */
+
+table {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table th {
+  background: rgba(247, 183, 51, 0.08);
+  color: var(--honey-bright);
+  font-weight: 600;
+  border-bottom: 1px solid var(--card-border);
+}
+
+table td, table th {
+  color: var(--text);
+  border-color: var(--card-border);
+}
+
+table tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Blockquotes + horizontal rules ------------------------------------- */
+
+blockquote {
+  background: var(--card);
+  border-left: 3px solid var(--honey);
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  border-radius: 0 6px 6px 0;
+}
+
+hr {
+  background: var(--card-border);
+  border: 0;
+  height: 1px;
+  margin: 2rem 0;
+}
+
+/* Footer -------------------------------------------------------------- */
+
+footer {
+  color: var(--muted);
+  border-top: 1px solid var(--card-border);
+}
+footer a { color: var(--honey); }
+
+/* Selection ----------------------------------------------------------- */
+
+::selection {
+  background: var(--honey);
+  color: var(--bg-base);
+}
