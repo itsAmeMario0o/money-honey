@@ -127,7 +127,11 @@ Read [`CLAUDE.md`](./CLAUDE.md) §Rules before editing anything. Every change st
 ## 📚 Key documents
 
 - [`CLAUDE.md`](./CLAUDE.md) — Architecture, rules, skill usage, tech stack, cost, build plan
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Comprehensive security, development, and testing architecture
+- [`STATUS.md`](./STATUS.md) — Live build status, what's running, what's blocked, what's next
 - [`docs/specs/chatbot-v1.md`](./docs/specs/chatbot-v1.md) — Application layer spec
 - [`docs/specs/infra-v1.md`](./docs/specs/infra-v1.md) — Terraform / Azure spec
 - [`docs/specs/cloudflare-access-v1.md`](./docs/specs/cloudflare-access-v1.md) — Zero-trust edge (Layer 8)
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Comprehensive security, development, and testing architecture
+- [`docs/setup/cloudflare-tunnel.md`](./docs/setup/cloudflare-tunnel.md) — Phase 2 walkthrough for the public edge
+- [`docs/runbooks/`](./docs/runbooks/) — Ops playbooks: rotate KV secret, recover Splunk, tunnel outage, deploy rollback
+- [`app/tests/demos/`](./app/tests/demos/) — Per-layer demo artifacts (CodeGuard path-traversal demo today; more layers landing in the demo workflow)

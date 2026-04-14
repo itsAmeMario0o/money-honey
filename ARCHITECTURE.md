@@ -12,7 +12,7 @@ Money Honey's architecture is split into **three domains**, with **eight indepen
 |---|---|---|
 | 🌐 **User access & edge** | How traffic from the internet reaches the app | Cloudflare Tunnel + Zero Trust, Caddy internal routing, TLS |
 | 🏗️ **Infrastructure** | Where the chatbot runs | Cilium, Tetragon, Key Vault, Splunk |
-| 👩‍💻 **Development workflow** | How code becomes production | Cisco AI Defense, GitHub Actions, pre-commit, quality gates |
+| 👩‍💻 **Development workflow** | How code becomes production | Cisco AI Defense, CoSAI CodeGuard, GitHub Actions, pre-commit, quality gates |
 
 The sections below walk each one.
 
@@ -156,6 +156,7 @@ AI projects have a unique threat: poisoned models, poisoned retrieval corpora, o
 - **AIBOM** (AI Bill of Materials): runs on every pull request in CI. Inventories every AI component, dependency, model version, and data source. Produces a machine-readable manifest. A PR that introduces an unknown AI dependency is blocked.
 - **Adversarial Hubness Detector**: runs when knowledge-base PDFs change. Detects RAG poisoning attempts — documents engineered to skew retrieval results toward attacker-preferred content. A PR that modifies a PDF without passing integrity checks is blocked.
 - **IDE AI Security Scanner**: runs locally in VS Code. Scans AI-related code patterns for prompt-injection risks, insecure API usage, and common anti-patterns before the code is even committed.
+- **CodeGuard (OASIS / CoSAI)**: ships as a Claude Code plugin (`codeguard-security@project-codeguard`) that injects the CoSAI secure-coding rulebook (cryptography incl. post-quantum, input validation, authn/authz, supply chain, cloud, platform, data protection) into every Claude Code session as standing context. Where the IDE Scanner watches what the developer writes, CodeGuard guards what the agent generates. A worked example lives in [`app/tests/demos/codeguard/`](app/tests/demos/codeguard/) — a deliberately risky prompt produced a path-traversal-safe implementation, with 10 pytest cases proving each rule.
 
 ### 2. CI/CD gates (Layer 6 — GitHub Actions)
 
@@ -298,7 +299,13 @@ money-honey/
 ├── splunk/                        # Splunk setup notes
 ├── docs/
 │   ├── specs/                     # Specs: chatbot, infra, cloudflare-access
-│   └── architecture/              # Detailed layer deep-dives (Jekyll site)
+│   ├── architecture/              # Detailed layer deep-dives (Jekyll site)
+│   ├── runbooks/                  # Ops playbooks (KV rotate, Splunk recover, tunnel outage, deploy rollback)
+│   ├── setup/                     # Provisioning + Cloudflare tunnel walkthroughs
+│   ├── chatbot/                   # RAG pipeline + Money Honey personality
+│   ├── cost.md
+│   └── roadmap.md
+├── app/tests/demos/               # Per-layer demo artifacts (CodeGuard today; more on the way)
 ├── .github/workflows/
 │   └── quality.yaml               # pytest + vitest + lint + scan
 ├── .pre-commit-config.yaml        # local quality hook

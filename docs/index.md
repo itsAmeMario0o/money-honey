@@ -15,7 +15,7 @@ A financial-education AI chatbot wrapped in **eight independent security layers*
 |---|---|---|
 | 🌐 **User access & edge** | How traffic reaches the app | Cloudflare Tunnel + Zero Trust (L8), Caddy internal routing (L4) |
 | 🏗️ **Infrastructure** | Where the chatbot runs | Cilium (L1), Tetragon (L2), Key Vault + CSI (L3), Splunk (L7) |
-| 👩‍💻 **Development workflow** | How code becomes production | Cisco AI Defense (L5), GitHub Actions + quality gates (L6) |
+| 👩‍💻 **Development workflow** | How code becomes production | Cisco AI Defense + CoSAI CodeGuard (L5), GitHub Actions + quality gates (L6) |
 
 No single failure cascades — that's the whole point.
 
@@ -38,6 +38,7 @@ No single failure cascades — that's the whole point.
 - [Developer workflow security](architecture/developer-workflow.html)
 - [Setup guides](setup/)
 - [Chatbot internals](chatbot/)
+- [Operations runbooks](runbooks/)
 
 ## Source
 
