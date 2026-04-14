@@ -39,11 +39,13 @@ data:
             action: upsert
 
     exporters:
-      # Splunk HEC metrics endpoint. The HEC token in the Splunk HEC
-      # Secret is the same token Fluent Bit uses — both write into
-      # the same Splunk instance.
+      # Splunk HEC metrics endpoint. The HEC token is the same one
+      # Fluent Bit uses — both write into the same Splunk instance.
+      # ${file:...} is an OTel config-source expansion that reads the
+      # secret from the CSI-mounted file at startup, so the credential
+      # never transits an env var or lives in this ConfigMap.
       splunk_hec/metrics:
-        token: ${SPLUNK_HEC_TOKEN}
+        token: ${file:/mnt/secrets/splunk-hec-token}
         endpoint: https://${SPLUNK_HEC_HOST}:8088/services/collector
         tls:
           insecure_skip_verify: true

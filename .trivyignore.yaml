@@ -28,19 +28,3 @@ vulnerabilities:
     #
     # Re-evaluate once we plan the langchain 0.3 -> 1.x migration in v2.
     expiredAt: "2026-12-31"
-
-misconfigurations:
-  - id: AVD-KSV-0109
-    paths:
-      - "k8s/otel/configmap.yaml"
-    # Reason: OTel Collector's splunk_hec exporter schema requires the
-    # field name `token`. Our ConfigMap value is the literal string
-    # "${SPLUNK_HEC_TOKEN}" — a placeholder the OTel binary substitutes
-    # at startup from the container env var, which in turn comes from
-    # a K8s Secret synced out of Azure Key Vault via the CSI driver.
-    # No actual credential lives in the ConfigMap.
-    #
-    # TODO (v2): swap `token:` for `token_file:` pointing at a
-    # CSI-mounted path to eliminate the env-var hop entirely, then
-    # remove this ignore.
-    expiredAt: "2026-12-31"

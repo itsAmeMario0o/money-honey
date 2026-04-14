@@ -81,11 +81,8 @@ spec:
           env:
             - name: SPLUNK_HEC_HOST
               value: "10.0.4.4"
-            - name: SPLUNK_HEC_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: splunk-hec
-                  key: SPLUNK_HEC_TOKEN
+            # SPLUNK_HEC_TOKEN intentionally not exposed as env var —
+            # OTel reads it directly from the CSI mount via token_file.
           ports:
             - name: metrics
               containerPort: 8888
