@@ -25,6 +25,14 @@ Runs locally in VS Code while developers write code. Catches common AI-adjacent 
 
 Combined with Layer 6's pre-commit hook (gitleaks for secrets, tfsec for infrastructure), this gives the developer three fast feedback loops before code even leaves their laptop.
 
+## CodeGuard (OASIS / CoSAI)
+
+[Project CodeGuard](https://github.com/cosai-oasis/project-codeguard) is an OASIS Open project under the Coalition for Secure AI. It ships as a Claude Code plugin (`codeguard-security@project-codeguard`) that injects a curated security rulebook into every Claude Code session as standing context. Rules cover eight domains: cryptography (including post-quantum), input validation, authn/authz, supply chain, cloud, platform, and data protection.
+
+Where the Cisco IDE Scanner watches what the developer writes in VS Code, CodeGuard watches what Claude itself generates during agent-assisted coding. The two are complementary: the IDE Scanner catches patterns, CodeGuard prevents them from being written. Both pair with the post-write gates (gitleaks, tfsec, ruff) for three independent windows on the same bug class.
+
+CoSAI sits in the same industry consortium as Cisco AI Defense — choosing CodeGuard keeps this project's AI-security layer coherent with a single standards body rather than scattered individual tools.
+
 ## Why it matters for this project
 
 The chatbot runs a local sentence-transformers embedding model and retrieves from a small, local PDF corpus. Even in that minimal surface, every path matters:

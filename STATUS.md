@@ -146,6 +146,7 @@ After closing #15 and #16, the rest will clear naturally as they either pass CI 
 
 - Tetragon log lives at `/var/run/cilium/tetragon/tetragon.log` on each node. `exportFilename` in tetragon.tf is now just the filename (not a full path) so the Helm chart produces a clean directory layout.
 - Fluent Bit runs as uid 0 because Tetragon writes the log as root and hostPath doesn't honor fsGroup. Still read-only rootfs + all caps dropped + no privesc.
+- CodeGuard (OASIS/CoSAI) plugin added to the CLAUDE.md skills section on 2026-04-14. Operator runs `/plugin marketplace add cosai-oasis/project-codeguard` + `/plugin install codeguard-security@project-codeguard` once per machine — no repo artifact required.
 - Caddy needs `CAP_NET_BIND_SERVICE` to bind port 80 as uid 1000.
 - AKS API server is public (no IP allowlist) — AAD + RBAC is the gate. V2 path: private cluster + self-hosted runners.
 - `local_account_disabled = false` on AKS so Terraform's Helm provider can auth via `kube_admin_config`. Kubelogin+exec is the v2 hardening.

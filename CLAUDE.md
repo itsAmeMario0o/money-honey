@@ -586,6 +586,21 @@ Install via the Claude Code plugin marketplace (one-time, from any Claude Code s
 
 Skills load from `~/.claude/plugins/cache/claude-code-skills/` — they are not copied into this repo. No `.claude/skills/` directory is required.
 
+### CodeGuard (OASIS / CoSAI) — standing security rules
+
+[Project CodeGuard](https://github.com/cosai-oasis/project-codeguard) is an OASIS Open project under the Coalition for Secure AI (CoSAI). It ships as a Claude Code plugin that injects a curated security rulebook (cryptography incl. post-quantum, input validation, authn/authz, supply chain, cloud, platform, data protection) into every Claude Code session as standing context.
+
+This layer is **complementary, not a replacement**, for our existing Cisco AI Defense tooling (AIBOM, Hubness Detector, IDE Scanner) and our pre-commit hooks (gitleaks, tfsec, ruff). CodeGuard operates *during* generation; gitleaks/tfsec/ruff run *after* the write; Cisco IDE Scanner runs in VS Code. Three independent windows.
+
+Install once per operator machine:
+```
+/plugin marketplace add cosai-oasis/project-codeguard
+/plugin install codeguard-security@project-codeguard
+/reload-plugins
+```
+
+CodeGuard rules are advisory: when they conflict with a CLAUDE.md rule or a project-specific skill in the table above, the project rule wins. Flag the conflict in the PR description so we can decide whether to update CodeGuard's config, suppress the specific rule, or change our code.
+
 ---
 
 ## .gitignore
@@ -660,4 +675,5 @@ splunk/var/
 - AIBOM: https://github.com/cisco-ai-defense/aibom
 - Adversarial Hubness Detector: https://github.com/cisco-ai-defense
 - IDE AI Security Scanner: https://cisco-ai-defense.github.io/docs/ai-security-scanner
+- CodeGuard (OASIS / CoSAI): https://github.com/cosai-oasis/project-codeguard
 - Webex notification action: https://github.com/marketplace/actions/webex-post-message-to-room-javascript-action

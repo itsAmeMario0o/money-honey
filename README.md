@@ -41,6 +41,7 @@ Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, pret
 | Registry | GitHub Container Registry (public packages) |
 | Image scan | Trivy (image, filesystem, k8s manifest) |
 | AI BOM | Cisco AI Defense `cisco-aibom` (PyPI) |
+| Agent security rules | [CodeGuard](https://github.com/cosai-oasis/project-codeguard) — OASIS/CoSAI Claude Code plugin, injects secure-coding rules during generation |
 | Docs | GitHub Pages (Jekyll / Merlot theme) |
 | Code quality | black, ruff, mypy, pytest (Python); prettier, eslint, tsc, vitest (TypeScript) |
 | Pre-commit | gitleaks, tfsec, ruff, black + scoped `.trivyignore.yaml` / `.gitleaksignore` |
