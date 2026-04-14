@@ -39,6 +39,8 @@ No single failure cascades — that's the whole point.
 - [Setup guides](setup/)
 - [Chatbot internals](chatbot/)
 - [Operations runbooks](runbooks/)
+- [Specifications](specs/)
+- [Cost](cost.html) · [Roadmap](roadmap.html)
 
 ## Source
 
