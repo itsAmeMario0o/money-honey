@@ -16,7 +16,7 @@ The project demonstrates a simple principle: **assume any one layer can fail, so
 | 2 | **Tetragon runtime enforcement** | Kernel-level process, file, and network visibility. Violations get `SIGKILL`, not alerts. |
 | 3 | **Azure Key Vault + CSI driver** | Secrets mounted as volumes via Managed Identity. No env vars, no configmaps, no service principal passwords. |
 | 4 | **Caddy (ClusterIP) internal routing** | Reverse proxy inside the cluster. Enforces security headers (CSP, X-Frame-Options, stripped Server header). TLS is handled by Cloudflare at the edge, not here. |
-| 5 | **Cisco AI Defense** | AIBOM on every PR, Adversarial Hubness Detector on PDF changes, IDE scanner in VS Code. |
+| 5 | **Cisco AI Defense + CoSAI CodeGuard** | Cisco: AIBOM on every PR, Adversarial Hubness Detector on PDF changes, IDE scanner in VS Code. CoSAI [CodeGuard](https://github.com/cosai-oasis/project-codeguard): OASIS/Coalition-for-Secure-AI Claude Code plugin that injects secure-coding rules during agent generation. Worked example in [`app/tests/demos/codeguard/`](app/tests/demos/codeguard/). |
 | 6 | **GitHub Actions gates** | Build → scan → deploy. AIBOM, Hubness, and code-quality checks all block merges. |
 | 7 | **Splunk observability** | Every process, network call, and violation lands in one searchable place. |
 | 8 | **Cloudflare Tunnel + Zero Trust** | `cloudflared` dials outbound from each origin. No public inbound app ports. Email-domain allowlists (Free plan, ≤50 users). See [`docs/specs/cloudflare-access-v1.md`](docs/specs/cloudflare-access-v1.md). |
