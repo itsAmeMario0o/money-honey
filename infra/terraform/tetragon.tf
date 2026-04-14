@@ -25,9 +25,13 @@ resource "helm_release" "tetragon" {
   }
 
   // JSON event log — Fluent Bit tails this file and ships to Splunk HEC.
+  // exportFilename is a filename ONLY (not a full path) — the chart
+  // concatenates it onto its internal exportDirectory. Passing a full
+  // path here doubles the directory prefix. Keeping just "tetragon.log"
+  // gives us a clean /var/run/cilium/tetragon/tetragon.log on the host.
   set {
     name  = "tetragon.exportFilename"
-    value = "/var/run/cilium/tetragon/tetragon.log"
+    value = "tetragon.log"
   }
 
   // Prometheus metrics on port 2112, scraped by OTel Collector in step 4.
