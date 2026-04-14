@@ -92,7 +92,7 @@ Tetragon runs as a **DaemonSet on every node**, hooking into the kernel via eBPF
 - `TracingPolicy` CRDs define allowlists for which binaries can run, which files can be read, which network connections are permitted.
 - Violations trigger `SIGKILL` — not alerts. Malicious or unexpected processes are killed, not logged and forgotten.
 - Process credential and namespace tracking are enabled so every event ties back to a specific container, pod, and user.
-- Tetragon writes JSON events to `/var/run/cilium/tetragon/tetragon.log` which Fluent Bit tails and ships to Splunk.
+- Tetragon writes JSON events to `/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log` on each node (Helm chart concatenates `exportFilename` onto its own `exportDirectory`, producing the nested path). Fluent Bit tails this path via `hostPath` mount and ships every event to Splunk HEC.
 
 ### 3. Secrets isolation (Layer 3 — Key Vault + CSI)
 
@@ -107,9 +107,9 @@ Tetragon runs as a **DaemonSet on every node**, hooking into the kernel via eBPF
 
 Everything security-relevant converges in a **single pane of glass**.
 
-- **Fluent Bit** runs as a DaemonSet and ships Tetragon's JSON event stream to Splunk HEC.
-- **OpenTelemetry Collector** scrapes Tetragon's Prometheus metrics on port 2112 and forwards them.
-- Splunk lives on its own Ubuntu VM in the same VNet (L3 reachable from AKS on port 8088 via the `aks-nodes` subnet CIDR).
+- **Fluent Bit** runs as a DaemonSet in `kube-system` (alongside Tetragon) and ships Tetragon's JSON event stream to Splunk HEC. A per-namespace `SecretProviderClass` (`observability-secrets`) provisions the Splunk HEC token from Key Vault into a `kube-system` K8s Secret that Fluent Bit reads via `envFrom`.
+- **OpenTelemetry Collector** (also in `kube-system`) uses the same SPC to read the HEC token. It scrapes Tetragon's Prometheus metrics on port 2112 and forwards them to the same Splunk instance, sourcetype `prometheus`.
+- Splunk lives on its own Ubuntu 22.04 VM (`Standard_B2ms`) in the same VNet (L3 reachable from AKS on port 8088 via the `aks-nodes` subnet CIDR, 10.0.0.0/22).
 - Public access to the Splunk UI is via its own Cloudflare Tunnel — same email-gated access as the chatbot.
 
 ### 5. The infrastructure picture
@@ -159,15 +159,17 @@ AI projects have a unique threat: poisoned models, poisoned retrieval corpora, o
 
 ### 2. CI/CD gates (Layer 6 — GitHub Actions)
 
-Four workflows enforce security at every code push:
+Five workflows enforce security at every code push:
 
 | Workflow | Purpose |
 |---|---|
-| `quality.yaml` | Runs pytest, vitest, ruff, black, mypy, tsc, eslint, prettier, gitleaks, tfsec on every PR. Fails close. |
-| `docker-build.yaml` | Builds React + FastAPI images, pushes to GitHub Container Registry. No images from untrusted registries. |
-| `deploy.yaml` | Uses `azure/aks-set-context` + `kubectl apply`. No direct cluster access outside CI. |
-| `aibom.yaml` | Cisco AIBOM scan — blocks PRs that break the AI supply chain. |
-| `hubness-scan.yaml` | Cisco Hubness Detector — blocks PRs that modify PDFs without passing integrity checks. |
+| `quality.yaml` | pytest, vitest, ruff, black, mypy, tsc, eslint, prettier, gitleaks, tfsec, **Trivy filesystem scan + CycloneDX SBOM**, Trivy k8s manifest scan. Fails closed on HIGH/CRITICAL. |
+| `docker-build.yaml` | Build → **Trivy image scan (blocking)** → push to GHCR. Image is never pushed if the scan finds HIGH/CRITICAL CVEs. |
+| `deploy.yaml` | `azure/login` (OIDC) → `azure/use-kubelogin` → `azure/aks-set-context` → `kubectl apply` scoped to `k8s/app`, `k8s/frontend`, `k8s/caddy`. |
+| `aibom.yaml` | Cisco AI Defense `cisco-aibom` CLI (PyPI) with OpenAI-backed agentic classifier — produces an AI Bill of Materials on every PR. |
+| `hubness-scan.yaml` | Cisco Adversarial Hubness Detector — blocks PRs that modify PDFs without passing integrity checks. |
+
+**Dependabot** complements Trivy with automated remediation PRs. Trivy *detects* HIGH/CRITICAL CVEs and blocks CI; Dependabot opens a PR with the fix. Five ecosystems are monitored weekly (pip, npm, docker, github-actions, terraform) with grouped patch+minor updates to keep the PR queue sane.
 
 Webex notifications fire on every build (pass or fail) so the team sees CI state in real time.
 
@@ -177,9 +179,11 @@ Three **independent layers** of secret + quality enforcement:
 
 | Layer | Where | What runs |
 |---|---|---|
-| 1 — Local pre-commit hook | Developer's laptop | gitleaks (with custom Azure subscription/tenant-ID rules), tfsec, ruff, black, private-key detection, YAML/JSON syntax, large-file block |
-| 2 — GitHub Actions `quality.yaml` | CI on every PR + push to main | Everything above, plus pytest, vitest, mypy, eslint, prettier, tsc |
+| 1 — Local pre-commit hook | Developer's laptop | gitleaks (custom Azure subscription/tenant-ID rules in `.gitleaks.toml`, scoped false-positive fingerprints in `.gitleaksignore`), tfsec, ruff, black, private-key detection, YAML/JSON syntax, large-file block |
+| 2 — GitHub Actions `quality.yaml` | CI on every PR + push to main | Everything above, plus pytest, vitest, mypy, eslint, prettier, tsc, Trivy filesystem + k8s scans (with `.trivyignore.yaml` honoring scoped, time-bounded exceptions) |
 | 3 — GitHub Secret Protection | Server-side, before push succeeds | Vendor-maintained secret patterns, push-block enforcement |
+
+Branch protection on `main` additionally blocks force-push and deletion. Status-checks-required gating turns on once CI has settled.
 
 Any one of them is enough to catch a typical mistake. All three together make the class of "I accidentally committed a secret" nearly impossible.
 
