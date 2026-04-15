@@ -56,7 +56,7 @@ Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-hone
 - Branch protection on `main`: force-push blocked, deletion blocked
 - GitHub Secret Protection + Push Protection: enabled
 - Local pre-commit hook: gitleaks + tfsec + ruff + black (runs on every commit)
-- `.trivyignore.yaml`: 2 scoped ignores (starlette DoS on fastapi 0.115; langchain-core `load_prompt` we don't call). OTel `token:` AVD-KSV-0109 entry removed after `${file:...}` refactor.
+- `.trivyignore.yaml`: 3 scoped ignores. starlette DoS on fastapi 0.115 (no multipart parser exposed); langchain-core `load_prompt` we don't call; OTel AVD-KSV-0109 (Trivy pattern-matches the literal `token:` key name, but the value is an OTel `${file:...}` source-expansion pointing at the CSI mount — no secret in the ConfigMap).
 - `.gitleaksignore`: 2 scoped ignores (tenant ID in SPC YAMLs)
 - CoSAI CodeGuard plugin applied in every Claude Code session; secure-coding rules injected at generation time
 - `.trivyignore.yaml` anti-amnesty guard in pytest: every entry must have `expiredAt` within 1 year (enforced by `app/tests/demos/trivy_ignore/`)

@@ -28,3 +28,21 @@ vulnerabilities:
     #
     # Re-evaluate once we plan the langchain 0.3 -> 1.x migration in v2.
     expiredAt: "2026-12-31"
+
+misconfigurations:
+  - id: AVD-KSV-0109
+    paths:
+      - "k8s/otel/configmap.yaml"
+    # Trivy flags any ConfigMap field named `token:`. OTel Collector's
+    # splunk_hec exporter requires that exact field name per its
+    # schema, so we can't rename it. The value is
+    # `${file:/mnt/secrets/splunk-hec-token}`, which is an OTel
+    # config-source expansion: the collector reads the token from a
+    # CSI-mounted file at startup. No secret value ever lives in the
+    # ConfigMap itself; only a filesystem-path reference does.
+    #
+    # Remediation path (would let us drop this ignore): upstream
+    # splunk_hec exporter adds a top-level `token_file:` field, or OTel
+    # adds schema-level support for file-source in any string field.
+    # Tracked in roadmap.md under v2 Observability.
+    expiredAt: "2027-04-15"
