@@ -12,7 +12,9 @@ demo regresses, CI breaks.
 
 | Path | Layer it showcases | What it proves |
 |---|---|---|
-| [`codeguard/path_traversal.py`](codeguard/path_traversal.py) + [`test_path_traversal.py`](codeguard/test_path_traversal.py) | Layer 5 — CoSAI/OASIS CodeGuard agent rules | A deliberately risky prompt ("open a user-supplied filename") produced CodeGuard-compliant code: allowlist base dir, reject absolute paths, resolve-then-verify-containment, reject symlink escapes, reject non-regular files, cap read size. Tests assert each rule's behavior. |
+| [`codeguard/path_traversal.py`](codeguard/path_traversal.py) + [`test_path_traversal.py`](codeguard/test_path_traversal.py) | Layer 5, CoSAI/OASIS CodeGuard agent rules | A deliberately risky prompt ("open a user-supplied filename") produced CodeGuard-compliant code: allowlist base dir, reject absolute paths, resolve-then-verify-containment, reject symlink escapes, reject non-regular files, cap read size. Tests assert each rule's behavior. |
+| [`tetragon/test_tracing_policy_structure.py`](tetragon/test_tracing_policy_structure.py) | Layer 2, Tetragon runtime enforcement | Parses `k8s/tetragon/tracing-policies.yaml` and asserts all three expected policies (process-exec-audit, network-connect-audit, secrets-file-audit) exist, are namespaced to `money-honey`, and hook via kprobes. Catches silent manifest drift. |
+| [`trivy_ignore/test_expiry_policy.py`](trivy_ignore/test_expiry_policy.py) | Layer 6, CI gates | Parses `.trivyignore.yaml` and asserts every entry has an `expiredAt` date, that date is in the future, and that date is no more than 1 year out. Prevents CVE-suppression lists from becoming permanent amnesty. |
 
 ## Adding new demos
 
