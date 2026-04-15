@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+from collections.abc import Generator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -36,7 +37,7 @@ def client() -> TestClient:
 
 
 @pytest.fixture
-def ready_client() -> TestClient:
+def ready_client() -> Generator[TestClient, None, None]:
     """App with both LLM and index available. For happy-path tests."""
     main = _fresh_main(with_llm=True, with_index=True)
 
@@ -134,7 +135,7 @@ def test_chat_rejects_non_json_body(client: TestClient) -> None:
     """Content-type plain/text shouldn't be silently accepted."""
     response = client.post(
         "/api/chat",
-        data="message=hello",
+        content=b"message=hello",
         headers={"content-type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 422
