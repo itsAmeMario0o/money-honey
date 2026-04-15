@@ -5,7 +5,7 @@ title: Populating Key Vault Secrets
 
 # 🗝️ Populating Key Vault secrets
 
-Terraform creates four secret *shells* in `mh-kv-w8fxwb`. The real values are set manually — they never live in code, CI, or Terraform state.
+Terraform creates four secret shells in `mh-kv-w8fxwb`. The real values are set manually; they never live in code, CI, or Terraform state.
 
 ## Prerequisites
 
@@ -69,9 +69,9 @@ You should see `enabled: true` and a recent `updated` timestamp on the ones you 
 
 ## Side effects of setting a secret
 
-Terraform's `azurerm_key_vault_secret` resources have `lifecycle { ignore_changes = [value, version] }`, so your manual `az keyvault secret set` creates a new version and Terraform does **not** try to revert it on the next `terraform apply`. Safe to set and re-set freely.
+Terraform's `azurerm_key_vault_secret` resources have `lifecycle { ignore_changes = [value, version] }`, so your manual `az keyvault secret set` creates a new version and Terraform does not try to revert it on the next `terraform apply`. Safe to set and re-set freely.
 
-Fluent Bit, OTel Collector, FastAPI, and cloudflared pods mount these secrets via the CSI driver — they'll pick up new values within ~5 minutes (matches `secret_rotation_interval` on the AKS add-on). For an immediate refresh: `kubectl -n money-honey rollout restart deploy/<name>`.
+Fluent Bit, OTel Collector, FastAPI, and cloudflared pods mount these secrets via the CSI driver. They pick up new values within ~5 minutes (matches `secret_rotation_interval` on the AKS add-on). For an immediate refresh: `kubectl -n money-honey rollout restart deploy/<name>`.
 
 ## Audit trail
 

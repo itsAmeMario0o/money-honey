@@ -35,23 +35,23 @@ pre-commit install
 
 Your Azure account needs at minimum:
 
-- **Contributor** on the subscription (or on the target resource group if you're narrower about it)
-- **Storage Blob Data Contributor** on the Terraform state storage account — the `terraform-bootstrap` module grants this to you automatically on first apply
+- Contributor on the subscription (or on the target resource group if you're narrower about it).
+- Storage Blob Data Contributor on the Terraform state storage account. The `terraform-bootstrap` module grants this to you automatically on first apply.
 
 ## Optional but recommended
 
 | Tool | Why |
 |---|---|
-| `gh` (GitHub CLI) | `brew install gh` — handy for inspecting workflow runs from terminal |
-| `jq` | `brew install jq` — helps parse Azure CLI JSON output in one-liners |
-| A Webex bot | Build at https://developer.webex.com — optional CI notifications |
-| An Anthropic account | https://console.anthropic.com — for the Claude API key that powers the chatbot |
+| `gh` (GitHub CLI) | `brew install gh`. Handy for inspecting workflow runs from terminal. |
+| `jq` | `brew install jq`. Helps parse Azure CLI JSON output in one-liners. |
+| A Webex bot | Build at https://developer.webex.com. Optional CI notifications. |
+| An Anthropic account | https://console.anthropic.com. For the Claude API key that powers the chatbot. |
 
 ## Order of operations for a fresh clone
 
-1. Read [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/CLAUDE.md) — project rules + architecture
-2. Read [`ARCHITECTURE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) — three-domain framework deep-dive
-3. Read [`STATUS.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/STATUS.md) — current state of play
+1. Read [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/CLAUDE.md) for project rules and architecture.
+2. Read [`ARCHITECTURE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) for the three-domain framework deep-dive.
+3. Read [`STATUS.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/STATUS.md) for the current state of play.
 4. Follow [`docs/setup/terraform.md`](terraform.html) to provision Azure resources
 5. Follow [`docs/setup/splunk.md`](splunk.html) to install Splunk on the VM
 6. Follow [`docs/setup/kv-secrets.md`](kv-secrets.html) to populate Key Vault

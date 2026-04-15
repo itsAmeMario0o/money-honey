@@ -5,11 +5,11 @@ title: Splunk Install (as a Debian package on the VM)
 
 # 🪵 Splunk install — Debian package on the dedicated VM
 
-Splunk Enterprise Free runs **as a `.deb` package** on the Ubuntu 22.04 VM — not in a container. Installation is driven by `infra/scripts/install-splunk.sh` over SSH; the script is idempotent (safe to re-run).
+Splunk Enterprise Free runs as a `.deb` package on the Ubuntu 22.04 VM, not in a container. Installation is driven by `infra/scripts/install-splunk.sh` over SSH. The script is idempotent (safe to re-run).
 
 ## What gets installed
 
-- Splunk Enterprise Free 9.3.2 (pinned in the script — change `SPLUNK_VERSION`/`SPLUNK_BUILD` env vars to bump)
+- Splunk Enterprise Free 9.3.2 (pinned in the script; change `SPLUNK_VERSION` / `SPLUNK_BUILD` env vars to bump)
 - Systemd service `splunk.service` with boot-start enabled
 - HTTP Event Collector (HEC) enabled and listening on port `8088`
 - Optional: `cloudflared` systemd service if `CLOUDFLARED_TOKEN` is set
@@ -55,7 +55,7 @@ Accept the self-signed cert warning (Splunk Web runs HTTPS on port 8000 by defau
 
 Fluent Bit and OTel Collector both post events to Splunk's HTTP Event Collector. You need a token.
 
-### Option A — one-liner (recommended)
+### Option A: one-liner (recommended)
 
 Creates the token via Splunk CLI over SSH, extracts the UUID, writes it to Key Vault. Requires `SPLUNK_ADMIN_PASSWORD` already exported in your shell:
 
@@ -76,22 +76,22 @@ echo "HEC token: $HEC_TOKEN"
 az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value "$HEC_TOKEN"
 ```
 
-The `grep -oE` matches a bare UUID — avoids storing the CLI's `token=<uuid>` prefix which would break HEC auth headers.
+The `grep -oE` matches a bare UUID. That avoids storing the CLI's `token=<uuid>` prefix, which would break HEC auth headers.
 
-### Option B — via the Splunk UI
+### Option B: via the Splunk UI
 
 1. Open via SSH port-forward: `ssh -i infra/private_key/splunk.pem -L 8000:localhost:8000 azureuser@<VM_IP>` then browse to http://localhost:8000
-2. **Settings → Data Inputs → HTTP Event Collector**
-3. Click **New Token**
+2. Settings → Data Inputs → HTTP Event Collector
+3. Click New Token
 4. Name: `money-honey-aks`
 5. Source type: `_json`
 6. Default index: `main` (or create `tetragon`)
-7. **Review + Submit** — copy the token (just the UUID, not any prefix)
+7. Review + Submit, then copy the token (just the UUID, not any prefix)
 8. Store it: `az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value '<uuid>'`
 
 ## Harden post-install (quick wins)
 
-- In **Settings → Server settings → General settings** → enable TLS for Splunk Web (upload a cert, or generate a local one). Optional if you're routing via Cloudflare Tunnel in the end.
+- In Settings → Server settings → General settings, enable TLS for Splunk Web (upload a cert, or generate a local one). Optional if you're routing via Cloudflare Tunnel in the end.
 - Change the `admin` user's password if anyone else used the initial seed password.
 - Disable the unused `main` index if you're routing everything to a dedicated `tetragon` index (saves the 500 MB/day budget).
 
@@ -102,7 +102,7 @@ The `grep -oE` matches a bare UUID — avoids storing the CLI's `token=<uuid>` p
 | SSH hangs | NSG allows port 22 only from your current public IP. If your IP changed since `terraform apply`, re-run `terraform apply` to refresh the NSG rule. |
 | `dpkg: error processing archive ...` | Rare. Run `sudo dpkg --configure -a` on the VM and retry. |
 | Splunk doesn't start on boot | `sudo systemctl status splunk` and inspect. The script enables boot-start explicitly; a failure here usually means the VM is short on disk. |
-| HEC returns `Server is busy` | Splunk is still initializing indexes — wait 30–60 s after the first start. |
+| HEC returns `Server is busy` | Splunk is still initializing indexes. Wait 30–60 s after the first start. |
 
 ## Reference
 

@@ -5,7 +5,7 @@ title: Cloudflare Tunnel Setup
 
 # ☁️ Cloudflare Tunnel setup (Layer 8)
 
-Wiring the Money Honey chatbot and the Splunk dashboard behind **Cloudflare Zero Trust**. When this is done, both apps are reachable over public URLs gated by a Cloudflare Access email-domain allowlist, and neither origin has a public inbound app port.
+Wiring the Money Honey chatbot and the Splunk dashboard behind Cloudflare Zero Trust. When this is done, both apps are reachable over public URLs gated by a Cloudflare Access email-domain allowlist, and neither origin has a public inbound app port.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Wiring the Money Honey chatbot and the Splunk dashboard behind **Cloudflare Zero
 - Terraform apply + `install-splunk.sh` already run
 - `kubectl` authenticated against `money-honey-aks`
 
-## Step 1 — Populate Key Vault with the two tunnel tokens
+## Step 1: populate Key Vault with the two tunnel tokens
 
 ```zsh
 read -s "SPLUNK_TOKEN?Splunk tunnel token (eyJ...): "
@@ -37,7 +37,7 @@ unset CHATBOT_TOKEN
 
 `read -s` hides the input. `unset` clears the variable from the shell after the `az keyvault secret set` call.
 
-## Step 2 — Run the Splunk VM's `cloudflared` installer
+## Step 2: run the Splunk VM's `cloudflared` installer
 
 `install-splunk.sh` skips the tunnel step if `CLOUDFLARED_TOKEN` is empty. Re-running with the token set adds the tunnel without reinstalling Splunk.
 
@@ -59,7 +59,7 @@ ssh -i infra/private_key/splunk.pem azureuser@$(terraform -chdir=infra/terraform
 # expect: active
 ```
 
-## Step 3 — Deploy the chatbot tunnel pod into AKS
+## Step 3: deploy the chatbot tunnel pod into AKS
 
 The `k8s/cloudflared/` manifest reads the tunnel token from the CSI-mounted Key Vault Secret and dials out to Cloudflare.
 
@@ -69,13 +69,13 @@ kubectl -n money-honey get pods -l app=cloudflared -w
 # wait for 2/2 Running
 ```
 
-If the pod crash-loops with an auth error, the token in KV is likely stale — rotate by deleting + recreating the tunnel in Cloudflare, then re-run step 1.
+If the pod crash-loops with an auth error, the token in KV is likely stale. Rotate by deleting and recreating the tunnel in Cloudflare, then re-run step 1.
 
-## Step 4 — Confirm both tunnels are "Healthy" in Cloudflare
+## Step 4: confirm both tunnels are "Healthy" in Cloudflare
 
-Open **https://one.dash.cloudflare.com → Networks → Tunnels**. Both `money-honey-splunk` and `money-honey-chatbot` should show the green "HEALTHY" indicator within 60 seconds of step 2 / step 3.
+Open https://one.dash.cloudflare.com → Networks → Tunnels. Both `money-honey-splunk` and `money-honey-chatbot` should show the green "HEALTHY" indicator within 60 seconds of step 2 / step 3.
 
-## Step 5 — Configure Public Hostnames
+## Step 5: configure Public Hostnames
 
 For each tunnel, click in and add a Public Hostname:
 
@@ -101,24 +101,24 @@ For each tunnel, click in and add a Public Hostname:
 
 Save each. The tunnel now routes public requests to the internal service.
 
-## Step 6 — Attach Access policies (email allowlist)
+## Step 6: attach Access policies (email allowlist)
 
-For each tunnel's Application in **Zero Trust → Access → Applications**:
+For each tunnel's Application in Zero Trust → Access → Applications:
 
-1. Click the app → **Policies** tab → **Add a policy**
+1. Click the app, then Policies tab, then Add a policy.
 2. Name: `email-allowlist`
-3. Action: **Allow**
-4. Include → **Emails ending in** → add `@cisco.com`, `@gmail.com`, `@outlook.com`, etc.
+3. Action: Allow
+4. Include → Emails ending in → add `@cisco.com`, `@gmail.com`, `@outlook.com`, etc.
 5. Save
 
 Now any visitor is prompted to authenticate (Google, Microsoft, or one-time email PIN) before the tunnel forwards their request. Only emails matching the allowlist get through.
 
-## Step 7 — Smoke-test end-to-end
+## Step 7: smoke-test end-to-end
 
 From your browser:
 
-- `https://chatbot.<your-domain>/` — Cloudflare Access login → email PIN → Money Honey UI
-- `https://splunk.<your-domain>/` — Access login → Splunk login prompt
+- `https://chatbot.<your-domain>/`: Cloudflare Access login, then email PIN, then Money Honey UI.
+- `https://splunk.<your-domain>/`: Access login, then Splunk login prompt.
 
 If either URL errors with "1033: Argo Tunnel error", the origin isn't reachable from the cloudflared pod. Check:
 
@@ -131,7 +131,7 @@ kubectl -n money-honey get svc caddy   # Cluster IP + port 80
 
 If a token leaks, rotate it:
 
-1. Cloudflare dashboard → the tunnel → **Delete tunnel** → create a new one with the same name
+1. Cloudflare dashboard → the tunnel → Delete tunnel → create a new one with the same name
 2. `az keyvault secret set --vault-name mh-kv-w8fxwb --name cloudflare-tunnel-<x>-token --value '<new token>'`
 3. Restart the consumer:
    - Chatbot tunnel: `kubectl -n money-honey rollout restart deployment/cloudflared`
@@ -139,4 +139,4 @@ If a token leaks, rotate it:
 
 ## 🧭 If you don't have a custom domain yet
 
-Cloudflare Zero Trust Free assigns a `*.cfargotunnel.com` hostname to each tunnel — ugly but fully functional. You can still attach Access policies. A custom domain is optional for v1; the Cloudflare team domain `money-honey.cloudflareaccess.com` handles the Access login regardless.
+Cloudflare Zero Trust Free assigns a `*.cfargotunnel.com` hostname to each tunnel. Ugly, but fully functional. You can still attach Access policies. A custom domain is optional for v1; the Cloudflare team domain `money-honey.cloudflareaccess.com` handles the Access login regardless.
