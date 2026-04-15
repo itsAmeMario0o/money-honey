@@ -6,9 +6,9 @@ A financial education chatbot wrapped in eight independent security layers. The 
 
 ## 🎯 The idea
 
-Money Honey answers personal finance questions in the voice of a nurturing-but-direct best friend. She grounds every answer in a small set of PDFs loaded into the knowledge base (local to the cluster, never exposed).
+Money Honey answers personal finance questions in the voice of a nurturing-but-direct best friend. Every answer is grounded in a small set of PDFs in the knowledge base. Those PDFs stay local to the cluster.
 
-The project demonstrates a simple principle: **assume any one layer can fail, so no single layer gets to matter.** Treat the AI like an untrusted process and wrap it in independent controls that each do one job well.
+Assume any layer can fail. None of them is load-bearing on its own. Treat the AI like any other untrusted process. Each layer does one job and doesn't depend on the others.
 
 ## 🛡️ The eight layers
 
@@ -23,7 +23,7 @@ The project demonstrates a simple principle: **assume any one layer can fail, so
 | 7 | **Splunk observability** | Every process, network call, and violation lands in one searchable place. |
 | 8 | **Cloudflare Tunnel + Zero Trust** | `cloudflared` dials outbound from each origin. No public inbound app ports. Email-domain allowlists (Free plan, ≤50 users). See [`docs/specs/cloudflare-access-v1.md`](docs/specs/cloudflare-access-v1.md). |
 
-Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, prettier, vitest) and **GitHub Secret Protection with push protection** — three independent lines of defense against leaked secrets.
+Add pre-commit guardrails (gitleaks, tfsec, black, ruff, mypy, eslint, prettier, vitest) and GitHub Secret Protection with push protection. That's three independent lines of defense against leaked secrets.
 
 ## 🧱 Tech stack
 
@@ -83,7 +83,7 @@ npm install
 npm run dev                   # :3000 — Vite proxies /api to :8000
 ```
 
-Drop your PDFs into `app/knowledge_base/pdfs/` — the folder is gitignored so source material never gets committed.
+Drop your PDFs into `app/knowledge_base/pdfs/`. The folder is gitignored, so source material never gets committed.
 
 ## 🏗️ Deploy to Azure (when step 4 lands)
 
@@ -119,7 +119,8 @@ After that, `git commit` automatically runs:
 - **tfsec** on Terraform files
 - Private-key detection, large-file block, YAML/JSON syntax
 
-**Three layers of prevention:**
+Three layers of prevention:
+
 1. Local pre-commit hook (above)
 2. CI workflow scan (step 5)
 3. GitHub Secret Protection with push protection (repo setting)
