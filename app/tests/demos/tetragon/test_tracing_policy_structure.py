@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 try:
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 except ImportError:  # pragma: no cover
     pytest.skip("PyYAML not installed", allow_module_level=True)
 

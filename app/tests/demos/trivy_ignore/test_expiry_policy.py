@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 try:
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 except ImportError:  # pragma: no cover - PyYAML ships with k8s + ansible tooling
     pytest.skip("PyYAML not installed", allow_module_level=True)
 
