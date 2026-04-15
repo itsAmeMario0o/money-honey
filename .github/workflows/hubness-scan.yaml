@@ -1,10 +1,23 @@
 # Cisco AI Defense — Adversarial Hubness Detector.
-# Runs on every PR that modifies anything under app/knowledge_base/.
-# Fails the PR if a PDF's hubness score indicates a RAG-poisoning
-# attempt.
 #
-# NOTE: placeholder invocation; verify the action interface against
-# https://github.com/cisco-ai-defense when wiring this up for real.
+# Audits the RAG knowledge base for embedding-space "adversarial hubs":
+# documents engineered so they rank near the top of many unrelated
+# queries, which is a known RAG-poisoning technique. Runs on every PR
+# that modifies anything under app/knowledge_base/.
+#
+# Pipeline:
+#   1. Install sentence-transformers + the Cisco ahd CLI.
+#   2. Re-embed every PDF in the PR with the same model used in prod
+#      (sentence-transformers/all-MiniLM-L6-v2) and write .npy + metadata.json.
+#   3. Run `ahd scan` with a config pointing at the embeddings.
+#   4. Upload report.json/html as workflow artifacts.
+#
+# Advisory mode today: the job reports but does not fail the PR unless
+# the scan itself errors. Flip to blocking once we have 1–2 clean runs
+# to calibrate the hub-score threshold. See STATUS.md Phase 3 item 14.
+#
+# Upstream:
+#   https://github.com/cisco-ai-defense/adversarial-hubness-detector
 
 name: Hubness scan (RAG integrity)
 
@@ -26,33 +39,115 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          # ahd requires Python 3.11+; 3.12 matches our runtime image.
 
-      - name: Run Hubness Detector
+      - name: Install embedding + scanner dependencies
         run: |
-          # Placeholder — replace with the official Cisco action reference.
-          # Expected behaviour: fail with non-zero exit if any PDF has a
-          # hubness score above the configured threshold.
-          pip install pypdf sentence-transformers scikit-learn numpy
+          python -m pip install --upgrade pip
+          pip install pypdf sentence-transformers numpy
+          # ahd is not on PyPI yet; install from source.
+          pip install git+https://github.com/cisco-ai-defense/adversarial-hubness-detector.git
+
+      - name: Bail out early if no PDFs in the PR
+        id: check_pdfs
+        run: |
+          shopt -s nullglob
+          pdfs=(app/knowledge_base/pdfs/*.pdf)
+          if [ ${#pdfs[@]} -eq 0 ]; then
+            echo "No PDFs present; skipping embedding + scan."
+            echo "has_pdfs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found ${#pdfs[@]} PDF(s) to scan."
+            echo "has_pdfs=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Embed PDFs to .npy using the prod embedding model
+        if: steps.check_pdfs.outputs.has_pdfs == 'true'
+        run: |
+          mkdir -p /tmp/hubness
           python - <<'PY'
-          import sys
+          import json
           from pathlib import Path
-          pdfs = list(Path("app/knowledge_base/pdfs").glob("*.pdf"))
-          if not pdfs:
-              print("No PDFs present in this PR; skipping.")
-              sys.exit(0)
-          # TODO: drop in the real Hubness Detector implementation.
-          print(f"Pretending to score {len(pdfs)} PDFs — OK (placeholder).")
+
+          import numpy as np
+          from pypdf import PdfReader
+          from sentence_transformers import SentenceTransformer
+
+          MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+          CHUNK_CHARS = 1000
+          CHUNK_OVERLAP = 150
+
+          def chunk(text: str) -> list[str]:
+              chunks = []
+              i = 0
+              while i < len(text):
+                  chunks.append(text[i : i + CHUNK_CHARS])
+                  i += CHUNK_CHARS - CHUNK_OVERLAP
+              return [c for c in chunks if c.strip()]
+
+          model = SentenceTransformer(MODEL)
+          texts: list[str] = []
+          metadata: list[dict] = []
+
+          for pdf in sorted(Path("app/knowledge_base/pdfs").glob("*.pdf")):
+              reader = PdfReader(str(pdf))
+              full = "\n".join((p.extract_text() or "") for p in reader.pages)
+              for idx, piece in enumerate(chunk(full)):
+                  texts.append(piece)
+                  metadata.append({"source": pdf.name, "chunk": idx})
+
+          if not texts:
+              raise SystemExit("PDFs produced no extractable text.")
+
+          embeddings = model.encode(texts, normalize_embeddings=True)
+          np.save("/tmp/hubness/embeddings.npy", embeddings)
+          Path("/tmp/hubness/metadata.json").write_text(json.dumps(metadata, indent=2))
+          print(f"Embedded {len(texts)} chunks from {len({m['source'] for m in metadata})} PDFs.")
           PY
 
-      - name: Upload scan report
-        if: always()
+      - name: Write ahd config
+        if: steps.check_pdfs.outputs.has_pdfs == 'true'
+        run: |
+          cat > /tmp/hubness/config.yaml <<'YAML'
+          # Minimal ahd config. Points at the embeddings we just produced
+          # and writes the report to the artifact-upload directory.
+          index:
+            type: numpy
+            embeddings_path: /tmp/hubness/embeddings.npy
+            metadata_path: /tmp/hubness/metadata.json
+          output:
+            report_path: /tmp/hubness/report.json
+            html_path: /tmp/hubness/report.html
+          YAML
+
+      - name: Run Hubness Detector
+        if: steps.check_pdfs.outputs.has_pdfs == 'true'
+        run: |
+          set +e
+          ahd scan --config /tmp/hubness/config.yaml
+          SCAN_EXIT=$?
+          # Advisory today: any scan-runtime error still fails the job,
+          # but a successful scan that finds hubs only logs.
+          if [ $SCAN_EXIT -ne 0 ]; then
+            echo "::error::ahd scan failed with exit $SCAN_EXIT."
+            exit $SCAN_EXIT
+          fi
+          if [ -f /tmp/hubness/report.json ]; then
+            echo "Report preview:"
+            python -c "import json; r=json.load(open('/tmp/hubness/report.json')); print(json.dumps(r, indent=2)[:2000])"
+          fi
+
+      - name: Upload hubness report
+        if: always() && steps.check_pdfs.outputs.has_pdfs == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: hubness-report
-          path: /tmp/hubness-*.json
-          if-no-files-found: ignore
+          path: |
+            /tmp/hubness/report.json
+            /tmp/hubness/report.html
+          if-no-files-found: warn
           retention-days: 30
