@@ -5,9 +5,9 @@ title: AI and LLM Security
 
 # 🤖 AI / LLM Security (Layer 5)
 
-AI projects have a unique threat surface: poisoned models, poisoned retrieval corpora, and AI-generated code that slips past traditional static analysis. Layer 5 wires three independent Cisco AI Defense tools across the AI lifecycle.
+AI projects have a unique threat surface: poisoned models, poisoned retrieval corpora, and AI-generated code that slips past traditional static analysis. Layer 5 wires four independent tools across the AI lifecycle: three from Cisco AI Defense plus CoSAI CodeGuard.
 
-## AIBOM — AI Bill of Materials
+## AIBOM (AI Bill of Materials)
 
 `.github/workflows/aibom.yaml` runs on every pull request that touches `app/` or `frontend/`. It produces a machine-readable manifest of every AI component, model version, and dependency involved in the PR. An untracked component fails the workflow and blocks merge.
 
@@ -31,7 +31,7 @@ Combined with Layer 6's pre-commit hook (gitleaks for secrets, tfsec for infrast
 
 Where the Cisco IDE Scanner watches what the developer writes in VS Code, CodeGuard watches what Claude itself generates during agent-assisted coding. The two are complementary: the IDE Scanner catches patterns, CodeGuard prevents them from being written. Both pair with the post-write gates (gitleaks, tfsec, ruff) for three independent windows on the same bug class.
 
-CoSAI sits in the same industry consortium as Cisco AI Defense — choosing CodeGuard keeps this project's AI-security layer coherent with a single standards body rather than scattered individual tools.
+CoSAI sits in the same industry consortium as Cisco AI Defense. Choosing CodeGuard keeps this project's AI-security layer coherent with a single standards body rather than a pile of unrelated tools.
 
 ## Why it matters for this project
 
