@@ -66,15 +66,12 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-h1, h2 {
-  background: var(--grad-honey);
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-}
-
-h3 { color: var(--honey-bright); }
-h4 { color: var(--honey); }
+/* Solid honey gold — kept flat so emojis don't get clipped into the
+   gradient (clip: text makes any glyph inherit the transparent bg). */
+h1 { color: var(--honey-bright); }
+h2 { color: var(--honey); }
+h3 { color: var(--honey-bright); font-weight: 500; }
+h4 { color: var(--text); }
 
 /* Links --------------------------------------------------------------- */
 
@@ -183,6 +180,49 @@ footer {
   border-top: 1px solid var(--card-border);
 }
 footer a { color: var(--honey); }
+
+/* Rouge syntax highlighting — dark honey palette.
+   Merlot ships a light-theme rouge stylesheet; we need to override
+   every common token class or code blocks render unreadable blue
+   on near-black. */
+
+.highlight,
+.highlight pre,
+.highlighter-rouge .highlight {
+  background: #0f0d0c !important;
+  color: #f4efe6 !important;
+}
+
+.highlight .c,  .highlight .c1, .highlight .cm, .highlight .cp,
+.highlight .cs, .highlight .cd                                { color: #7a7269 !important; font-style: italic; }  /* comments */
+.highlight .k,  .highlight .kc, .highlight .kd, .highlight .kn,
+.highlight .kp, .highlight .kr, .highlight .kt                { color: #ffb84d !important; }                      /* keywords */
+.highlight .s,  .highlight .s1, .highlight .s2, .highlight .sb,
+.highlight .sc, .highlight .sd, .highlight .se, .highlight .sh,
+.highlight .si, .highlight .sx, .highlight .sr, .highlight .ss { color: #e5c07b !important; }                     /* strings */
+.highlight .m,  .highlight .mi, .highlight .mf, .highlight .mh,
+.highlight .mo, .highlight .mb                                { color: #ffd48a !important; }                      /* numbers */
+.highlight .na, .highlight .nb, .highlight .nc, .highlight .nd,
+.highlight .ne, .highlight .nf, .highlight .nl, .highlight .nn,
+.highlight .nt, .highlight .nv, .highlight .nx, .highlight .py,
+.highlight .no                                                { color: #f4efe6 !important; }                      /* names */
+.highlight .nf, .highlight .nc                                { color: #ffb84d !important; }                      /* functions + classes punch */
+.highlight .o,  .highlight .ow                                { color: #a29d93 !important; }                      /* operators */
+.highlight .p                                                 { color: #f4efe6 !important; }                      /* punctuation */
+.highlight .err                                               { color: #ff7070 !important; background: transparent !important; }
+.highlight .gd                                                { color: #ff7070 !important; }                      /* diff removed */
+.highlight .gi                                                { color: #8ec07c !important; }                      /* diff added */
+.highlight .gh, .highlight .gu                                { color: #ffb84d !important; font-weight: 600; }
+.highlight .gs                                                { font-weight: 600; }
+.highlight .ge                                                { font-style: italic; }
+
+/* Line-number gutter if enabled. */
+.highlight .lineno, .highlight .gl {
+  color: #7a7269 !important;
+  border-right: 1px solid var(--card-border);
+  padding-right: 0.5rem;
+  margin-right: 0.5rem;
+}
 
 /* Selection ----------------------------------------------------------- */
 
