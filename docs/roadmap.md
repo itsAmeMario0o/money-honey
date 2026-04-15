@@ -32,49 +32,48 @@ Everything listed in [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/
 - Enable GitHub Pages (Settings → Pages → Source `main` / `/docs`)
 - Flip `trivy-k8s` job from advisory to required once a baseline pass clean
 
-## 🔮 v2 — post-launch hardening
+## 🔮 v2: post-launch hardening
 
-Deferred on purpose from v1 — each is a clean follow-on project.
+Deferred on purpose from v1. Each is a clean follow-on project.
 
 ### Infrastructure
 
-- **ArgoCD / Flux** for GitOps-style continuous delivery (replaces the `kubectl apply` step in `deploy.yaml`). Adds drift detection and rollback workflows.
-- **ACNS (Azure Container Networking Services)** subscription — unlocks Hubble flow visibility, FQDN-based network policies, L7 (HTTP / gRPC) policies. About $30/mo at our cluster size.
-- **Isovalent Enterprise** via Azure Marketplace — BGP peering, tetragon enterprise features, Hubble UI. Consider only if we go production-adjacent.
-- **Private AKS cluster** — API server moves to a private endpoint only reachable through VNet peering or Express Route. Raises the bar for attacker API access.
-- **Azure Bastion or Cloudflare SSH tunnel** — eliminate the Splunk VM's public IP entirely (currently kept for SSH admin).
+- ArgoCD / Flux for GitOps-style continuous delivery (replaces the `kubectl apply` step in `deploy.yaml`). Adds drift detection and rollback workflows.
+- ACNS (Azure Container Networking Services) subscription. Unlocks Hubble flow visibility, FQDN-based network policies, and L7 (HTTP / gRPC) policies. About $30/mo at our cluster size.
+- Isovalent Enterprise via Azure Marketplace. BGP peering, Tetragon enterprise features, Hubble UI. Consider only if we go production-adjacent.
+- Private AKS cluster. API server moves to a private endpoint only reachable through VNet peering or Express Route. Raises the bar for attacker API access.
+- Azure Bastion or Cloudflare SSH tunnel. Eliminate the Splunk VM's public IP entirely (currently kept for SSH admin).
 
 ### AI / LLM
 
-- **LLM evaluation harness** — regression-test retrieval quality and voice adherence as the corpus or system prompt evolves.
-- **Prompt injection test suite** — red-team prompts baked into CI via a dedicated workflow.
-- **Per-session rate limiting** at the FastAPI layer (currently none; only cost protection is the Anthropic $20 cap).
-- **Citation rendering in the UI** — show which PDF sourced each answer.
-- **Multi-language support** — English-only in v1.
-- **Hybrid search** (BM25 + vector) — if corpus grows past ~50 docs.
-- **Persisted FAISS index** on an Azure File share — skip the rebuild on pod restart.
-- **Bump fastapi 0.115.0 → 0.116+** so the starlette pin can move to 0.40.0+ and clear CVE-2024-47874 in `.trivyignore.yaml`. Currently safe because we expose JSON-only endpoints (no multipart parser invoked), but the dependency-tree refresh is overdue.
-
-- **Migrate langchain 0.3.x → 1.x** — currently pinned to 0.3.27 because the sub-packages cohere there. langchain-core 1.2.22 fixes CVE-2026-34070 (path traversal in legacy `load_prompt`). We're not exposed (don't call the function — see `.trivyignore.yaml` rationale), but a clean migration eliminates the ignore and gets us on a maintained line. Major-version bump means breaking API changes; budget a real iteration.
+- LLM evaluation harness. Regression-test retrieval quality and voice adherence as the corpus or system prompt evolves.
+- Prompt injection test suite. Red-team prompts baked into CI via a dedicated workflow.
+- Per-session rate limiting at the FastAPI layer (currently none; only cost protection is the Anthropic $20 cap).
+- Citation rendering in the UI. Show which PDF sourced each answer.
+- Multi-language support. English-only in v1.
+- Hybrid search (BM25 + vector) if the corpus grows past ~50 docs.
+- Persisted FAISS index on an Azure File share. Skip the rebuild on pod restart.
+- Bump fastapi 0.115.0 → 0.116+ so the starlette pin can move to 0.40.0+ and clear CVE-2024-47874 in `.trivyignore.yaml`. Currently safe because we expose JSON-only endpoints (no multipart parser invoked), but the dependency-tree refresh is overdue.
+- Migrate langchain 0.3.x → 1.x. Currently pinned to 0.3.27 because the sub-packages cohere there. langchain-core 1.2.22 fixes CVE-2026-34070 (path traversal in legacy `load_prompt`). We're not exposed (we don't call the function; see `.trivyignore.yaml` rationale), but a clean migration eliminates the ignore and gets us on a maintained line. Major-version bump means breaking API changes; budget a real iteration.
 
 ### Observability
 
-- **OTel `token_file:` refactor** — replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. Removes the env-var / K8s-Secret hop entirely (the token never sits in a Pod env or K8s Secret object — it only exists as a file mounted from Key Vault). Lets us delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
+- OTel `token_file:` refactor. Replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. Removes the env-var / K8s-Secret hop entirely (the token never sits in a Pod env or K8s Secret object; it only exists as a file mounted from Key Vault). Lets us delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
 
 ### Developer workflow
 
-- **cosign** image signing + `policy-controller` verification on AKS admission.
-- **OPA Gatekeeper or Kyverno** mutating/validating admission webhooks — enforce resource-request presence, label conventions, etc.
-- **Dependabot or Renovate** for automated dependency PRs (complements Trivy's detection with automated remediation).
-- **LLM cost tracking** dashboard in Splunk — per-request Anthropic spend, surfaced as a panel.
-- **Formal secrets rotation** workflow — currently all secret updates are manual `az keyvault secret set`.
+- cosign image signing + `policy-controller` verification on AKS admission.
+- OPA Gatekeeper or Kyverno mutating/validating admission webhooks. Enforce resource-request presence, label conventions, etc.
+- Dependabot or Renovate for automated dependency PRs (complements Trivy's detection with automated remediation).
+- LLM cost tracking dashboard in Splunk. Per-request Anthropic spend, surfaced as a panel.
+- Formal secrets rotation workflow. Currently all secret updates are manual `az keyvault secret set`.
 
 ### Operational
 
-- **Runbooks** in `docs/runbooks/` for incident response (cluster down, tunnel broken, KV lockout, etc.).
-- **Smoke tests post-deploy** in `deploy.yaml` — hit `/api/health`, `/api/chat`, the public Cloudflare URL.
-- **Synthetic monitoring** from an external location (Pingdom / Datadog Synthetics / Splunk Synthetics).
-- **Disaster recovery plan** — currently the demo is stateless enough that "rebuild from code in 15 minutes" is the strategy. v2 would formalise this as a test we actually run.
+- Runbooks in `docs/runbooks/` for incident response (cluster down, tunnel broken, KV lockout, etc.).
+- Smoke tests post-deploy in `deploy.yaml`. Hit `/api/health`, `/api/chat`, the public Cloudflare URL.
+- Synthetic monitoring from an external location (Pingdom / Datadog Synthetics / Splunk Synthetics).
+- Disaster recovery plan. Currently the demo is stateless enough that "rebuild from code in 15 minutes" is the strategy. v2 would formalise this as a test we actually run.
 
 ## 🎯 What we're NOT building
 
@@ -82,5 +81,5 @@ Things explicitly out of scope even for v2 unless requirements change:
 
 - Multi-tenant support / user accounts / PII handling
 - Real user authentication (Cloudflare Access is enough for a demo; a full SSO integration isn't on the roadmap)
-- SOC 2 / HIPAA compliance evidence — that's a different project scope
+- SOC 2 / HIPAA compliance evidence. That's a different project scope.
 - Selling this as a product
