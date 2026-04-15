@@ -5,7 +5,7 @@ title: Rotate a Key Vault secret
 
 # 🔐 Rotate a Key Vault secret
 
-Use this when a secret in `mh-kv-w8fxwb` needs to be replaced — suspected leak, scheduled rotation, or the upstream issuer (Anthropic, Cloudflare, Splunk HEC) gave you a new token.
+Use this when a secret in `mh-kv-w8fxwb` needs to be replaced: suspected leak, scheduled rotation, or the upstream issuer (Anthropic, Cloudflare, Splunk HEC) gave you a new token.
 
 The CSI Secret Store Driver does NOT auto-pick-up new versions by default. You must roll the consuming pods after writing the new secret.
 
@@ -67,7 +67,7 @@ kubectl -n money-honey  rollout restart deployment/cloudflared     # cloudflare-
 ssh azureuser@$SPLUNK_VM_IP 'sudo systemctl restart cloudflared'
 ```
 
-### 3. Disable the OLD version (don't delete — keeps audit trail)
+### 3. Disable the OLD version (don't delete, so the audit trail is preserved)
 
 ```zsh
 OLD_VERSION=$(az keyvault secret list-versions \

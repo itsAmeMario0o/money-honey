@@ -24,15 +24,15 @@ kubectl -n money-honey get pods
 kubectl -n money-honey rollout history deployment/<name>
 kubectl -n money-honey describe deployment/<name> | head -40
 
-# Capture the failing pod's recent logs BEFORE rolling back — needed for the postmortem.
+# Capture the failing pod's recent logs BEFORE rolling back. You'll need them for the postmortem.
 kubectl -n money-honey logs deploy/<name> --previous --tail=200 > /tmp/<name>-failed-$(date +%s).log
 ```
 
-If pods are stuck on `ImagePullBackOff` and the image tag is correct, the GHCR package may have been switched back to private — see `Case D` below before rolling back.
+If pods are stuck on `ImagePullBackOff` and the image tag is correct, the GHCR package may have been switched back to private. See `Case D` below before rolling back.
 
 ## Procedure
 
-### Case A — Roll back to the previous ReplicaSet (most common)
+### Case A: Roll back to the previous ReplicaSet (most common)
 
 ```zsh
 # Show available revisions.
@@ -48,7 +48,7 @@ kubectl -n money-honey rollout undo deployment/<name> --to-revision=<N>
 kubectl -n money-honey rollout status deployment/<name> --timeout=120s
 ```
 
-### Case B — Pin to an older image tag explicitly
+### Case B: Pin to an older image tag explicitly
 
 Use this when the offending image is `:latest` or a moving tag and you want to lock to a known-good SHA.
 
@@ -60,7 +60,7 @@ kubectl -n money-honey set image deployment/fastapi fastapi=$GOOD
 kubectl -n money-honey rollout status deployment/fastapi --timeout=120s
 ```
 
-### Case C — Pause further rollouts while you investigate
+### Case C: Pause further rollouts while you investigate
 
 ```zsh
 kubectl -n money-honey rollout pause deployment/<name>
@@ -68,9 +68,9 @@ kubectl -n money-honey rollout pause deployment/<name>
 kubectl -n money-honey rollout resume deployment/<name>
 ```
 
-A paused Deployment ignores `kubectl set image` until resumed — useful to prevent a CI re-run from clobbering your manual revert.
+A paused Deployment ignores `kubectl set image` until resumed. Useful to prevent a CI re-run from clobbering your manual revert.
 
-### Case D — `ImagePullBackOff` with the right tag
+### Case D: `ImagePullBackOff` with the right tag
 
 The GHCR package visibility may have flipped to private (Trivy or a manual click in the GitHub UI).
 
@@ -78,7 +78,7 @@ The GHCR package visibility may have flipped to private (Trivy or a manual click
 2. Package settings → Change visibility → Public
 3. Wait 30s, then `kubectl -n money-honey delete pod -l app=<name>` to force a re-pull
 
-### Case E — Both fastapi AND react regressed at once
+### Case E: Both fastapi AND react regressed at once
 
 Suspect Caddy or the shared ConfigMap, not the apps. Roll back caddy first; the app pods will recover when their upstream is back.
 
@@ -108,7 +108,7 @@ For the LLM path specifically, also check:
 
 ## Rollback (yes, of the rollback)
 
-If the rollback itself made things worse — e.g. the previous ReplicaSet's image was also broken and you didn't realize:
+If the rollback itself made things worse (e.g. the previous ReplicaSet's image was also broken and you didn't realize):
 
 ```zsh
 # Roll FORWARD to a specific revision.

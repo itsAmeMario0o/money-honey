@@ -39,7 +39,7 @@ terraform -chdir=infra/terraform apply -auto-approve \
 
 ## Procedure
 
-### Case A — VM is stopped/deallocated
+### Case A: VM is stopped/deallocated
 
 ```zsh
 az vm start -g money-honey-rg -n money-honey-splunk
@@ -47,7 +47,7 @@ az vm start -g money-honey-rg -n money-honey-splunk
 ssh azureuser@$SPLUNK_VM_IP 'sudo systemctl status splunk cloudflared'
 ```
 
-### Case B — VM is running but Splunk is down
+### Case B: VM is running but Splunk is down
 
 ```zsh
 ssh azureuser@$SPLUNK_VM_IP <<'EOS'
@@ -59,9 +59,9 @@ sudo systemctl restart splunk
 EOS
 ```
 
-If disk is full, the offender is almost always `/opt/splunk/var/log/splunk/`. Splunk Free has a 500 MB/day index quota — over-quota does NOT delete on its own, but log churn from a restart loop can fill the disk. Trim the largest files in `/opt/splunk/var/log/splunk/` after stopping splunkd.
+If disk is full, the offender is almost always `/opt/splunk/var/log/splunk/`. Splunk Free has a 500 MB/day index quota. Over-quota does NOT delete on its own, but log churn from a restart loop can fill the disk. Trim the largest files in `/opt/splunk/var/log/splunk/` after stopping splunkd.
 
-### Case C — VM is running, Splunk is up, HEC still refuses
+### Case C: VM is running, Splunk is up, HEC still refuses
 
 ```zsh
 ssh azureuser@$SPLUNK_VM_IP <<'EOS'
@@ -75,16 +75,16 @@ EOS
 
 If HEC is listening but cluster pods still can't reach it, the AKS subnet → Splunk subnet path is broken. Re-check the NSG `allow-hec-aks-subnet` rule allows `10.0.0.0/22 → :8088`.
 
-### Case D — VM is unreachable (full reboot needed)
+### Case D: VM is unreachable (full reboot needed)
 
 ```zsh
 az vm restart -g money-honey-rg -n money-honey-splunk
 # Wait 60-90s, then re-run pre-checks.
 ```
 
-### Case E — Hard rebuild (last resort, data preserved)
+### Case E: Hard rebuild (last resort, data preserved)
 
-The VM uses a managed OS disk separate from the data disk holding `/opt/splunk`. If the OS disk corrupts, you can re-create the VM and re-attach the data disk via Terraform. Because this is destructive in scope, it's deliberately NOT scripted — pause and re-read `infra/terraform/splunk-vm.tf` before running, and confirm the data disk is excluded from any `taint` you do.
+The VM uses a managed OS disk separate from the data disk holding `/opt/splunk`. If the OS disk corrupts, you can re-create the VM and re-attach the data disk via Terraform. Because this is destructive in scope, it's deliberately NOT scripted. Pause, re-read `infra/terraform/splunk-vm.tf` before running, and confirm the data disk is excluded from any `taint` you do.
 
 ## Verification
 
@@ -107,4 +107,4 @@ kubectl -n kube-system logs -l app=fluent-bit --tail=20 | grep -i splunk
 
 ## Rollback
 
-Recovery is read-only on Azure-side state — there is nothing to roll back. If a restart made things worse (e.g. systemd unit corrupt), the next step is Case E (rebuild).
+Recovery is read-only on Azure-side state, so there is nothing to roll back. If a restart made things worse (e.g. systemd unit corrupt), the next step is Case E (rebuild).

@@ -5,7 +5,7 @@ title: Cloudflare Tunnel outage
 
 # ☁️ Cloudflare Tunnel outage
 
-Cloudflare Tunnel (Layer 8) is the only public path to Money Honey. There is no backup path. If a tunnel is down, the corresponding app is unreachable from the internet — but the cluster and Splunk are still healthy and reachable from inside the VNet.
+Cloudflare Tunnel (Layer 8) is the only public path to Money Honey. There is no backup path. If a tunnel is down, the corresponding app is unreachable from the internet, but the cluster and Splunk are still healthy and reachable from inside the VNet.
 
 There are two named tunnels:
 
@@ -22,7 +22,7 @@ There are two named tunnels:
 
 ## Pre-checks
 
-1. **Is it Cloudflare itself?** Check https://www.cloudflarestatus.com/ — if there's an active incident on Workers / Tunnel, wait it out.
+1. Is it Cloudflare itself? Check https://www.cloudflarestatus.com/. If there's an active incident on Workers / Tunnel, wait it out.
 2. **Which tunnel is affected?** Check the dashboard tunnel status (Networks → Tunnels). If both are down at once, suspect Cloudflare or your DNS upstream, not the origins.
 3. **Is the origin app actually up?** A tunnel can't proxy to a dead backend.
 
@@ -37,11 +37,11 @@ kubectl -n money-honey run curl-test --rm -it --restart=Never \
 ssh azureuser@$SPLUNK_VM_IP 'curl -sS -o /dev/null -w "%{http_code}\n" http://localhost:8000/'
 ```
 
-If origin returns non-200, fix the origin first (see [recover-splunk.md](recover-splunk.md) or [rollback-deploy.md](rollback-deploy.md)) — the tunnel will recover automatically.
+If origin returns non-200, fix the origin first (see [recover-splunk.md](recover-splunk.md) or [rollback-deploy.md](rollback-deploy.md)). The tunnel will recover automatically.
 
 ## Procedure
 
-### Case A — Chatbot tunnel pod is CrashLoopBackOff
+### Case A: Chatbot tunnel pod is CrashLoopBackOff
 
 ```zsh
 kubectl -n money-honey get pods -l app=cloudflared
@@ -55,9 +55,9 @@ Most common causes + fixes:
 | `error="Login token does not contain a token"` | Token in Key Vault is wrong / placeholder. Re-populate `cloudflare-tunnel-chatbot-token` and follow [rotate-kv-secret.md](rotate-kv-secret.md). |
 | `dial tcp: lookup caddy.money-honey... no such host` | Caddy Service is missing. `kubectl -n money-honey apply -f k8s/caddy/`. |
 | `Unauthorized: Failed to get tunnel` | The named tunnel was deleted in the dashboard. Re-create it, generate a new token, rotate. |
-| `connection refused` to upstream | Caddy pod is down — see [rollback-deploy.md](rollback-deploy.md). |
+| `connection refused` to upstream | Caddy pod is down. See [rollback-deploy.md](rollback-deploy.md). |
 
-### Case B — Splunk-VM cloudflared (systemd) is failed
+### Case B: Splunk-VM cloudflared (systemd) is failed
 
 ```zsh
 ssh azureuser@$SPLUNK_VM_IP <<'EOS'
@@ -79,7 +79,7 @@ CLOUDFLARED_TOKEN=$(az keyvault secret show --vault-name mh-kv-w8fxwb \
   ./infra/scripts/install-splunk.sh
 ```
 
-### Case C — Public Hostname routes broken
+### Case C: Public Hostname routes broken
 
 If the tunnel is HEALTHY but the public URL still 404s/502s, the Public Hostname mapping in the Cloudflare dashboard is wrong.
 
@@ -89,13 +89,13 @@ If the tunnel is HEALTHY but the public URL still 404s/502s, the Public Hostname
    - `money-honey-splunk` → service `http://localhost:8000`
 3. If you don't have a custom domain attached, the URL is `<tunnel-id>.cfargotunnel.com`.
 
-### Case D — Cloudflare Access blocking legitimate traffic
+### Case D: Cloudflare Access blocking legitimate traffic
 
 If users hit a Cloudflare Access login screen and their email isn't on the allowlist:
 
 1. Zero Trust → Access → Applications → click the app
 2. Edit the policy → add the email or domain to the **Include** list
-3. Save — propagates within ~30s
+3. Save. The policy propagates within ~30s.
 
 ## Verification
 
@@ -105,13 +105,13 @@ curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://chatbot.<your-domain>/
 curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://splunk.<your-domain>/
 
 # Tunnel says HEALTHY in the dashboard.
-# (No CLI for this on Free plan — visual check.)
+# (No CLI for this on Free plan. Visual check.)
 ```
 
 ## Rollback
 
 For the chatbot tunnel: `kubectl -n money-honey rollout undo deployment/cloudflared` reverts to the previous pod template if a config change broke it.
 
-For the Splunk-VM connector: SSH to the VM and `sudo systemctl restart cloudflared` — the prior token in `/etc/cloudflared/config.yml` is still there unless you overwrote it.
+For the Splunk-VM connector: SSH to the VM and `sudo systemctl restart cloudflared`. The prior token in `/etc/cloudflared/config.yml` is still there unless you overwrote it.
 
-There is no "rollback" for Cloudflare dashboard changes — undo manually using the audit log timestamps you captured.
+There is no "rollback" for Cloudflare dashboard changes. Undo manually using the audit log timestamps you captured.
