@@ -1,6 +1,6 @@
 # 📊 Current Build Status
 
-Last updated 2026-04-13.
+Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-honey/.
 
 ## ✅ Azure resources live
 
@@ -44,19 +44,23 @@ Last updated 2026-04-13.
 
 | Workflow | Status |
 |---|---|
-| `quality.yaml` (pytest, vitest, ruff, black, mypy, eslint, prettier, gitleaks, tfsec, Trivy fs + k8s) | 🚧 wired up; iterating on first-run errors |
-| `docker-build.yaml` (build + Trivy image scan + push to GHCR) | 🚧 in flight — just pushed the Alpine 3.23 + faiss-cpu 1.13.2 fixes |
+| `quality.yaml` (pytest, vitest, ruff, black, mypy, eslint, prettier, gitleaks, tfsec, Trivy fs + k8s) | ✅ green. 19 pytest cases across /api/chat + /api/health + CORS. 3 demo suites (CodeGuard, Tetragon, trivyignore). |
+| `docker-build.yaml` (build + Trivy image scan + push to GHCR) | 🚧 green on frontend; backend image push pending first successful build with Anthropic key gating |
 | `deploy.yaml` (OIDC Azure login + kubelogin + kubectl apply) | 🚧 SP verified; waits on images in GHCR |
-| `aibom.yaml` (Cisco AIBOM via uv tool install) | ⏳ blocked on `OPENAI_API_KEY` secret |
-| `hubness-scan.yaml` (Cisco Hubness Detector) | 📝 placeholder; wire up once real action interface confirmed |
+| `aibom.yaml` (Cisco AIBOM via uv tool install) | ⏳ blocked on `OPENAI_API_KEY` GitHub secret |
+| `hubness-scan.yaml` (Cisco adversarial-hubness-detector) | ✅ wired to real `ahd scan` CLI. Triggers on `app/knowledge_base/**`. Advisory today; flip to blocking after first calibration run. |
+| `pages-build-deployment` (GitHub-managed, builds Jekyll from /docs) | ✅ live. Auto-rebuilds on every push to `docs/`. |
 
 ## 🛡️ Repo security posture
 
 - Branch protection on `main`: force-push blocked, deletion blocked
 - GitHub Secret Protection + Push Protection: enabled
 - Local pre-commit hook: gitleaks + tfsec + ruff + black (runs on every commit)
-- `.trivyignore.yaml`: 1 scoped ignore (OTel ConfigMap `token:` false positive)
+- `.trivyignore.yaml`: 2 scoped ignores (starlette DoS on fastapi 0.115; langchain-core `load_prompt` we don't call). OTel `token:` AVD-KSV-0109 entry removed after `${file:...}` refactor.
 - `.gitleaksignore`: 2 scoped ignores (tenant ID in SPC YAMLs)
+- CoSAI CodeGuard plugin applied in every Claude Code session; secure-coding rules injected at generation time
+- `.trivyignore.yaml` anti-amnesty guard in pytest: every entry must have `expiredAt` within 1 year (enforced by `app/tests/demos/trivy_ignore/`)
+- Issue + PR templates added under `.github/` (bug, feature, security-non-sensitive); private vuln reporting enabled via GitHub Security tab
 
 ---
 
