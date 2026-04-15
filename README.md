@@ -2,6 +2,8 @@
 
 A financial education chatbot wrapped in eight independent security layers. The chatbot is the demo. The defense-in-depth architecture is the lesson.
 
+📖 **Live docs site:** https://itsamemario0o.github.io/money-honey/
+
 ## 🎯 The idea
 
 Money Honey answers personal finance questions in the voice of a nurturing-but-direct best friend. She grounds every answer in a small set of PDFs loaded into the knowledge base (local to the cluster, never exposed).
@@ -55,7 +57,7 @@ Plus **pre-commit guardrails** (gitleaks, tfsec, black, ruff, mypy, eslint, pret
 | 3. Infrastructure (Terraform) | ✅ Applied to Azure — AKS, KV, VNet, Splunk VM all live |
 | 4. Kubernetes manifests | ✅ All manifests applied — namespace, 8 CNPs, 3 TracingPolicies, 2 SPCs, Fluent Bit, OTel, Caddy, fastapi/react Deployments. App pods waiting on first successful image pull. |
 | 5. CI/CD workflows | ✅ Active — quality + docker-build + deploy + aibom + hubness-scan all wired. Azure SP federated, kubelogin in deploy, Trivy in build, scoped ignores in `.trivyignore.yaml`. |
-| 6. Jekyll docs site | 🚧 Landing page + architecture deep-dives + setup walkthroughs written. Enable Pages in Settings when ready for public docs. |
+| 6. Jekyll docs site | ✅ Live at [itsamemario0o.github.io/money-honey](https://itsamemario0o.github.io/money-honey/) — Merlot theme restyled to match the frontend (honey palette, Space Grotesk, amber glow, dark Rouge code highlighting). Auto-rebuilds on every push to `docs/`. |
 | Cloudflare Tunnel (Layer 8) | 🚧 Splunk VM tunnel installed; chatbot tunnel pod manifest written. Tokens still placeholder in KV. Public Hostname routing pending operator. |
 | Splunk install | ✅ Splunk Enterprise Free running, HEC token populated in KV |
 | Anthropic key | ⏳ KV placeholder — operator-supplied when ready |
