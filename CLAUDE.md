@@ -371,7 +371,7 @@ money-honey/
 │   ├── specs/                 # Feature specs (infra, k8s, CI/CD, chatbot, Cloudflare)
 │   ├── cost.md
 │   └── roadmap.md
-└── notebooks/                 # Jupyter notebooks (local VS Code only)
+└── .trivyignore.yaml          # Scoped Trivy ignores (3 entries, all time-bounded)
 ```
 
 ---
