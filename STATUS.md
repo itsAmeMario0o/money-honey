@@ -1,6 +1,6 @@
 # 📊 Current Build Status
 
-Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-honey/.
+Last updated 2026-04-16. Live docs at https://itsamemario0o.github.io/money-honey/.
 
 ## ✅ Azure resources live
 
@@ -10,7 +10,7 @@ Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-hone
 | Tetragon DaemonSet (kube-system, 3/3 pods) | ✅ Running | $0 |
 | VNet `money-honey-vnet` + 2 subnets | ✅ | $0 |
 | Key Vault `mh-kv-w8fxwb` | ✅ | <$1/mo |
-| Splunk VM (Ubuntu 22.04, `Standard_B2ms`) + **Splunk Enterprise Free installed** | ✅ Running | ~$70/mo |
+| Splunk VM (Ubuntu 22.04, `Standard_B2ms`) + Splunk Enterprise Free installed | ✅ Running | ~$70/mo |
 | Splunk public IP (SSH only; web/HEC internal) | ✅ | $3.60/mo |
 | Terraform state SA `mhtfstatemjr26` | ✅ | <$1/mo |
 | Azure federated Service Principal `money-honey-ci` (OIDC for CI) | ✅ | $0 |
@@ -44,12 +44,13 @@ Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-hone
 
 | Workflow | Status |
 |---|---|
-| `quality.yaml` (pytest, vitest, ruff, black, mypy, eslint, prettier, gitleaks, tfsec, Trivy fs + k8s) | ✅ green. 19 pytest cases across /api/chat + /api/health + CORS. 3 demo suites (CodeGuard, Tetragon, trivyignore). |
-| `docker-build.yaml` (build + Trivy image scan + push to GHCR) | 🚧 green on frontend; backend image push pending first successful build with Anthropic key gating |
-| `deploy.yaml` (OIDC Azure login + kubelogin + kubectl apply) | 🚧 SP verified; waits on images in GHCR |
-| `aibom.yaml` (Cisco AIBOM via uv tool install) | ⏳ blocked on `OPENAI_API_KEY` GitHub secret |
-| `hubness-scan.yaml` (Cisco adversarial-hubness-detector) | ✅ wired to real `ahd scan` CLI. Triggers on `app/knowledge_base/**`. Advisory today; flip to blocking after first calibration run. |
+| `quality.yaml` (pytest, vitest, ruff, black, mypy, eslint, prettier, gitleaks, tfsec, Trivy fs + k8s) | ✅ green. 19 pytest cases across /api/chat + /api/health + CORS. 3 demo suites (CodeGuard, Tetragon, trivyignore). Webex notification on failure only. |
+| `docker-build.yaml` (build + Trivy image scan + push to GHCR) | ✅ green on frontend. Backend builds but image needs GHCR package flipped to public after first push. Webex notification wired. |
+| `deploy.yaml` (OIDC Azure login + kubelogin + kubectl apply) | 🚧 SP verified; waits on images in GHCR. Webex notification wired. |
+| `aibom.yaml` (Cisco AIBOM via uv tool install) | ⏳ blocked on `OPENAI_API_KEY` GitHub secret. Webex notification wired. |
+| `hubness-scan.yaml` (Cisco adversarial-hubness-detector) | ✅ wired to real `ahd scan` CLI. Triggers on `app/knowledge_base/**`. Advisory today; flip to blocking after first calibration run. Webex notification wired. |
 | `pages-build-deployment` (GitHub-managed, builds Jekyll from /docs) | ✅ live. Auto-rebuilds on every push to `docs/`. |
+| Webex bot (`money-honey-ci`) | ✅ bot created, token + room ID in GitHub secrets. All 5 workflows post to "Money Honey 💸🍯" space. |
 
 ## 🛡️ Repo security posture
 
@@ -61,6 +62,10 @@ Last updated 2026-04-14. Live docs at https://itsamemario0o.github.io/money-hone
 - CoSAI CodeGuard plugin applied in every Claude Code session; secure-coding rules injected at generation time
 - `.trivyignore.yaml` anti-amnesty guard in pytest: every entry must have `expiredAt` within 1 year (enforced by `app/tests/demos/trivy_ignore/`)
 - Issue + PR templates added under `.github/` (bug, feature, security-non-sensitive); private vuln reporting enabled via GitHub Security tab
+- All docs humanized via blader/humanizer skill (Option B: keep emojis, strip AI writing patterns)
+- CLAUDE.md freshness audit complete (stale repo tree, workflow count, Tetragon path, OTel token all corrected)
+- 3 per-layer demos under `app/tests/demos/`: CodeGuard path-traversal (10 tests), Tetragon TracingPolicy structure (4 tests), trivyignore anti-amnesty (4 tests)
+- 4 ops runbooks under `docs/runbooks/`: KV rotation, Splunk recovery, tunnel outage, deploy rollback
 
 ---
 
@@ -138,11 +143,11 @@ After closing #15 and #16, the rest will clear naturally as they either pass CI 
 ### Phase 3 — polish + public launch (both sides)
 
 10. **Populate `OPENAI_API_KEY`** as a GitHub repo secret so `aibom.yaml` runs.
-11. **Finish `.github/workflows/hubness-scan.yaml`** — verify the real Cisco Hubness action interface.
+11. ~~**Finish `.github/workflows/hubness-scan.yaml`**~~ ✅ Wired to real Cisco `ahd scan` CLI (2026-04-14). Embeds PDFs with the same model as prod, runs adversarial hubness detection, uploads report artifacts.
 12. ~~**Enable GitHub Pages**~~ ✅ Live at **https://itsamemario0o.github.io/money-honey/** (enabled 2026-04-14). Merlot theme restyled to match the frontend design system (honey palette, Space Grotesk, amber glow, dark Rouge code theme). Auto-rebuilds on every push that touches `docs/` or `_config.yml`.
 13. **Tighten branch protection**: require passing status checks (`Quality`, `Docker Build`, `Deploy`) on `main` once CI has 2–3 clean runs.
 14. **Flip advisory gates to blocking**: `trivy-k8s` job, `aibom.yaml`.
-15. **Fix the v1.1 backlog** in `docs/roadmap.md`: CSI cross-namespace architecture cleanup. _(OTel `${file:...}` token refactor and Tetragon `exportFilename` simplification landed on 2026-04-13.)_
+15. **Fix the v1.1 backlog** in `docs/roadmap.md`: CSI cross-namespace architecture cleanup. _(OTel `${file:...}` token refactor and Tetragon `exportFilename` simplification landed 2026-04-13. CLAUDE.md freshness audit landed 2026-04-16. Humanizer pass across all docs landed 2026-04-14. Notebooks/ removed 2026-04-16.)_
 
 ---
 
