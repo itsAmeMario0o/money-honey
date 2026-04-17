@@ -65,29 +65,31 @@ Caddy runs as a `ClusterIP` Service inside the cluster — no public IP, no Let'
 
 Controls that protect the AI pipeline: the model, the knowledge base, and the supply chain.
 
-**Layer 5: AI supply chain and RAG integrity (Cisco AI Defense)**
-Three tools from Cisco AI Defense operate across the AI lifecycle:
+**Layer 5: AI supply chain and RAG integrity (Cisco AI Defense + CodeGuard)**
+Three tools from Cisco AI Defense plus one from OASIS CoSAI operate across the AI lifecycle:
 
 - AIBOM (AI Bill of Materials): Runs on every PR in CI. Inventories all AI components, dependencies, model versions, and data sources. Produces a machine-readable manifest of the AI supply chain. (https://github.com/cisco-ai-defense/aibom)
 - Adversarial Hubness Detector: Runs when PDFs change. Detects poisoning attempts in the RAG knowledge base. Identifies adversarial documents designed to skew retrieval results. (https://github.com/cisco-ai-defense)
 - IDE AI Security Scanner: Runs locally in VS Code. Scans AI-related code patterns for vulnerabilities, prompt injection risks, and insecure API usage. (https://cisco-ai-defense.github.io/docs/ai-security-scanner)
+- CodeGuard (OASIS / CoSAI): Claude Code plugin that injects standing security rules (cryptography, input validation, authn/authz, supply chain, cloud, data protection) during code generation. Complements pre-commit hooks that run after the write. (https://github.com/cosai-oasis/project-codeguard)
 
 ### Domain 3: Developer Workflow Security
 
 Controls that protect the build, deploy, and review process.
 
 **Layer 6: CI/CD pipeline controls (GitHub Actions)**
-Four workflows enforce security gates before code reaches the cluster:
+Five workflows enforce security and quality gates before code reaches the cluster:
 
-- `docker-build.yaml`: Build React + FastAPI images, push to GHCR. No images from untrusted registries.
+- `quality.yaml`: Runs pytest, vitest, tsc, eslint, prettier, mypy, ruff, gitleaks, tfsec, and Trivy on every PR. The primary quality gate.
+- `docker-build.yaml`: Build React + FastAPI images, Trivy scan, push to GHCR. No images from untrusted registries.
 - `deploy.yaml`: AKS context via `azure/aks-set-context@v3`, then `kubectl apply`. No direct cluster access outside CI.
 - `aibom.yaml`: AIBOM scan blocks PRs that introduce untracked AI dependencies.
 - `hubness-scan.yaml`: Adversarial Hubness Detector blocks PRs that modify PDFs without passing integrity checks.
 
-Webex notification on every build (pass or fail) via `chrivand/action-webex-js`.
+Webex notification on every build (pass or fail) via `chrivand/action-webex-js@v1.0.1`.
 
 **Layer 7: Observability and audit (Splunk)**
-All security telemetry converges in Splunk Enterprise Free (500 MB/day). Fluent Bit ships Tetragon JSON logs (process events, file access, network connections, policy violations). OTel Collector scrapes Tetragon Prometheus metrics on port 2112 and forwards cluster-level metrics. Splunk provides the single pane for security audit: what ran, what connected, what was blocked, and when.
+All security telemetry converges in Splunk Enterprise Free (500 MB/day). Fluent Bit ships Tetragon JSON logs (process events, file access, network connections, policy violations). OTel Collector scrapes Tetragon Prometheus metrics on port 2112 and forwards cluster-level metrics. OTel reads the Splunk HEC token via `${file:/mnt/secrets/splunk-hec-token}` config-source expansion from a CSI-mounted file — no env var, no secret in the ConfigMap. Splunk provides the single pane for security audit: what ran, what connected, what was blocked, and when.
 
 **Layer 8: Identity-gated edge (Cloudflare Tunnel + Zero Trust)**
 Every public entry point to Money Honey sits behind Cloudflare. `cloudflared` runs on each origin (Splunk VM as systemd, chatbot as a Kubernetes Deployment) and dials outbound to Cloudflare's edge — origins have no public inbound app ports. Cloudflare Zero Trust Free covers two named tunnels and Access policies that can gate traffic by email domain (e.g. `*@cisco.com`, `*@gmail.com`). Tunnel connector tokens live in Azure Key Vault, never in code. Full spec: `docs/specs/cloudflare-access-v1.md`.
@@ -279,8 +281,8 @@ FQDN filtering, L7 policy, Hubble, eBPF host routing all require ACNS. Use IP-ba
 ### No Isovalent Enterprise
 Cannot be Helm-installed on Azure CNI powered by Cilium. Marketplace or BYOCNI only. Deferred.
 
-### No ArgoCD, no Trivy
-ArgoCD deferred to v2. GitHub Actions + kubectl apply for deployment. AIBOM for supply chain scanning. Trivy for image CVE + k8s manifest misconfig + filesystem dependency scans (see `.github/workflows/docker-build.yaml` + `quality.yaml`).
+### No ArgoCD; Trivy for scanning
+ArgoCD deferred to v2. GitHub Actions + kubectl apply for deployment. AIBOM for AI supply chain scanning. Trivy for image CVE + k8s manifest misconfig + filesystem dependency scans (see `.github/workflows/docker-build.yaml` + `quality.yaml`). Known-acceptable findings tracked in `.trivyignore.yaml` (currently 3 entries: 2 CVEs + 1 scoped misconfig).
 
 ### Tetragon via Helm
 Only Helm release on this cluster. Chart version 1.3.0 pinned. Process cred tracking, namespace tracking, Prometheus on 2112, runtime hooks, JSON export.
@@ -295,47 +297,78 @@ Only Helm release on this cluster. Chart version 1.3.0 pinned. Process cred trac
 ```
 money-honey/
 ├── CLAUDE.md                  # This file
+├── ARCHITECTURE.md            # Public-facing architecture summary
+├── README.md                  # Project overview
+├── STATUS.md                  # Build progress tracker
+├── LICENSE
 ├── _config.yml                # Jekyll config for GitHub Pages
+├── .trivyignore.yaml          # Scoped Trivy ignores (2 CVEs + 1 misconfig)
 ├── .github/
 │   └── workflows/
-│       ├── docker-build.yaml  # Build images, push to GHCR
+│       ├── quality.yaml       # Lint, type-check, test, scan on every PR
+│       ├── docker-build.yaml  # Build images, Trivy scan, push to GHCR
 │       ├── deploy.yaml        # AKS deploy via kubectl apply
 │       ├── aibom.yaml         # AIBOM scan on every PR
 │       └── hubness-scan.yaml  # Hubness Detector on PDF changes
 ├── app/                       # FastAPI backend
 │   ├── main.py
+│   ├── personality.py         # Money Honey system prompt
+│   ├── rag.py                 # LangChain + FAISS retrieval
 │   ├── requirements.txt
-│   └── Dockerfile
+│   ├── pyproject.toml         # mypy / ruff / black config
+│   ├── Dockerfile
+│   ├── knowledge_base/pdfs/   # RAG source PDFs
+│   └── tests/
+│       ├── test_health.py
+│       ├── test_personality.py
+│       ├── test_rag.py
+│       └── demos/             # Policy-as-code demo tests
+│           ├── codeguard/     # CodeGuard path-traversal demo
+│           ├── tetragon/      # TracingPolicy structure tests
+│           └── trivy_ignore/  # Expiry-policy tests
 ├── frontend/                  # React SPA
 │   ├── src/
 │   ├── package.json
+│   ├── vite.config.ts
+│   ├── vitest.config.ts
+│   ├── nginx.conf
 │   └── Dockerfile
 ├── infra/
 │   ├── terraform/
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
+│   │   ├── versions.tf
+│   │   ├── providers.tf
+│   │   ├── backend.tf
+│   │   ├── network.tf
 │   │   ├── aks.tf
 │   │   ├── tetragon.tf
 │   │   ├── keyvault.tf
 │   │   ├── splunk-vm.tf
-│   │   └── dns.tf
+│   │   └── terraform.tfvars.example
 │   └── scripts/
 ├── k8s/
+│   ├── namespace.yaml         # money-honey namespace
 │   ├── app/                   # FastAPI Deployment + Service
 │   ├── frontend/              # React Deployment + Service
 │   ├── caddy/                 # Caddy ConfigMap + Deployment + Service
+│   ├── cloudflared/           # Cloudflare Tunnel connector Deployment
 │   ├── tetragon/              # TracingPolicy CRDs
 │   ├── fluent-bit/            # DaemonSet + ConfigMap (Splunk HEC)
 │   ├── otel/                  # OTel Collector config
 │   ├── network-policies/      # CiliumNetworkPolicy manifests
 │   └── secrets/               # SecretProviderClass for Key Vault CSI
 ├── splunk/                    # VM setup, HEC config, app install
-├── docs/                      # GitHub Pages (Jekyll)
+├── docs/                      # GitHub Pages site (live, Merlot theme restyled)
 │   ├── index.md               # Landing page
+│   ├── _includes/             # Jekyll partials (head_custom.html)
+│   ├── assets/css/            # Custom SCSS overrides for Merlot
 │   ├── architecture/          # Security layer deep dives
 │   ├── setup/                 # Provisioning and deployment guides
 │   ├── chatbot/               # RAG pipeline and personality docs
+│   ├── runbooks/              # Ops runbooks (KV rotation, Splunk, tunnels, deploys)
+│   ├── specs/                 # Feature specs (infra, k8s, CI/CD, chatbot, Cloudflare)
 │   ├── cost.md
 │   └── roadmap.md
 └── notebooks/                 # Jupyter notebooks (local VS Code only)
@@ -372,7 +405,7 @@ resource "helm_release" "tetragon" {
 
   set { name = "tetragon.enableProcessCred"; value = "true" }
   set { name = "tetragon.enableProcessNs"; value = "true" }
-  set { name = "tetragon.exportFilename"; value = "/var/run/cilium/tetragon/tetragon.log" }
+  set { name = "tetragon.exportFilename"; value = "tetragon.log" }  # bare filename, not a path — chart prepends /var/run/cilium/tetragon/
   set { name = "tetragon.prometheus.enabled"; value = "true" }
   set { name = "tetragon.prometheus.port"; value = "2112" }
   set { name = "tetragon.prometheus.serviceMonitor.enabled"; value = "false" }
@@ -405,7 +438,7 @@ money-honey.mariojruiz.com {
 
 ## CI/CD Notifications
 
-Webex Bot via `chrivand/action-webex-js`. Secrets: `WEBEX_BOT_TOKEN`, `WEBEX_ROOM_ID`. Posts build status to a Webex space on every workflow run.
+Webex Bot via `chrivand/action-webex-js@v1.0.1`. Secrets: `WEBEX_BOT_TOKEN`, `WEBEX_ROOM_ID`. Posts build status to a Webex space on every workflow run. All five workflows (quality, docker-build, deploy, aibom, hubness-scan) include the notification job.
 
 ---
 
@@ -432,7 +465,7 @@ With `az aks stop` when not demoing: ~$65-70/month (Splunk VM + storage only).
 
 ## GitHub Pages Site
 
-This project includes a GitHub Pages site at `https://itsAmeMario0o.github.io/money-honey/`. The site is the public-facing documentation for the security architecture.
+This project includes a live GitHub Pages site at `https://itsAmeMario0o.github.io/money-honey/`. The site is the public-facing documentation for the security architecture. Merlot theme has been restyled with a custom honey-toned color palette (`docs/assets/css/style.scss`) and custom head partial (`docs/_includes/head_custom.html`).
 
 ### GitHub Free tier constraints
 
@@ -495,22 +528,43 @@ Source: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jek
 ```
 docs/
 ├── index.md                   # Landing page: project overview, security philosophy
+├── _includes/
+│   └── head_custom.html       # Custom fonts + favicon
+├── assets/css/
+│   └── style.scss             # Merlot theme overrides (honey palette)
 ├── architecture/
+│   ├── index.md               # Section landing page
 │   ├── overview.md            # Three domains, eight layers diagram and summary
 │   ├── infrastructure.md      # Layers 1-4: Cilium, Tetragon, Key Vault, Caddy
-│   ├── ai-security.md         # Layer 5: AIBOM, Hubness Detector, IDE Scanner
-│   └── developer-workflow.md  # Layers 6-7: GitHub Actions gates, Splunk audit
+│   ├── ai-security.md         # Layer 5: AIBOM, Hubness Detector, IDE Scanner, CodeGuard
+│   └── developer-workflow.md  # Layers 6-8: GitHub Actions, Splunk, Cloudflare
 ├── setup/
+│   ├── index.md               # Section landing page
 │   ├── prerequisites.md       # Azure CLI, Terraform, kubectl, Helm versions
 │   ├── terraform.md           # AKS provisioning walkthrough with code blocks
-│   ├── tetragon.md            # Tetragon deployment and TracingPolicy examples
 │   ├── splunk.md              # Splunk VM setup, HEC config, Cisco Security Cloud App
-│   └── ci-cd.md               # GitHub Actions workflows and Webex notifications
+│   ├── kv-secrets.md          # Key Vault + CSI driver setup
+│   ├── azure-sp-for-ci.md     # Service principal for GitHub Actions
+│   └── cloudflare-tunnel.md   # Cloudflare Tunnel + Zero Trust setup
 ├── chatbot/
+│   ├── index.md               # Section landing page
 │   ├── rag-pipeline.md        # LangChain + FAISS + Claude integration
 │   └── personality.md         # Money Honey character and system prompt design
+├── runbooks/
+│   ├── index.md               # Runbook index
+│   ├── rotate-kv-secret.md    # Key Vault secret rotation
+│   ├── recover-splunk.md      # Splunk recovery
+│   ├── tunnel-outage.md       # Cloudflare Tunnel troubleshooting
+│   └── rollback-deploy.md     # Deployment rollback
+├── specs/
+│   ├── index.md               # Spec index
+│   ├── infra-v1.md            # Infrastructure spec
+│   ├── k8s-v1.md              # Kubernetes manifests spec
+│   ├── cicd-v1.md             # CI/CD pipeline spec
+│   ├── chatbot-v1.md          # Chatbot application spec
+│   └── cloudflare-access-v1.md # Cloudflare Zero Trust spec
 ├── cost.md                    # Monthly cost breakdown with az aks stop savings
-└── roadmap.md                 # v2 items: ACNS, Isovalent Enterprise, Trivy, ArgoCD
+└── roadmap.md                 # v2 items: ACNS, Isovalent Enterprise, ArgoCD
 ```
 
 ### Page front matter
