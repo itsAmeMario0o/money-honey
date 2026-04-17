@@ -89,7 +89,7 @@ jobs:
     steps:
       - name: Send Webex message
         if: env.WEBEX_BOT_TOKEN != ''
-        uses: chrivand/action-webex-js@b75da3c89c7e9d5f18abdf9de472cbc8f2c20f14
+        uses: chrivand/action-webex-js@v1.0.1
         with:
           token: ${{ env.WEBEX_BOT_TOKEN }}
           roomId: ${{ env.WEBEX_ROOM_ID }}
