@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { sendChatMessage } from "../api";
-import type { Message } from "../types";
+import type { HistoryEntry, Message } from "../types";
 import MessageBubble from "./MessageBubble";
+
+function buildHistory(messages: Message[]): HistoryEntry[] {
+  return messages.map((m) => ({ role: m.role, content: m.text }));
+}
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -16,11 +20,14 @@ export default function ChatWindow() {
     }
     setError(null);
     setIsSending(true);
-    setMessages((prev) => [...prev, { role: "user", text }]);
+
+    const updatedMessages: Message[] = [...messages, { role: "user", text }];
+    setMessages(updatedMessages);
     setInput("");
 
     try {
-      const response = await sendChatMessage(text);
+      const history = buildHistory(messages);
+      const response = await sendChatMessage(text, history);
       setMessages((prev) => [...prev, { role: "assistant", text: response.reply }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");

@@ -174,6 +174,53 @@ def test_chat_accepts_boundary_length_messages(ready_client: TestClient) -> None
 
 
 # ---------------------------------------------------------------------------
+# /api/chat — conversation history (Tier 1)
+# ---------------------------------------------------------------------------
+
+
+def test_chat_accepts_empty_history(ready_client: TestClient) -> None:
+    body = ready_client.post("/api/chat", json={"message": "hi", "history": []}).json()
+    assert body["reply"]
+
+
+def test_chat_accepts_history_with_prior_turns(ready_client: TestClient) -> None:
+    payload = {
+        "message": "what did I just say?",
+        "history": [
+            {"role": "user", "content": "I have $40k in student loans"},
+            {"role": "assistant", "content": "Let me help with that."},
+        ],
+    }
+    response = ready_client.post("/api/chat", json=payload)
+    assert response.status_code == 200
+
+
+def test_chat_without_history_field_is_backward_compatible(
+    ready_client: TestClient,
+) -> None:
+    response = ready_client.post("/api/chat", json={"message": "hi"})
+    assert response.status_code == 200
+
+
+def test_chat_trims_history_over_max_turns(ready_client: TestClient) -> None:
+    """25 history turns should be trimmed to MAX_HISTORY_TURNS (20)."""
+    history = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"turn {i}"} for i in range(25)
+    ]
+    response = ready_client.post("/api/chat", json={"message": "latest", "history": history})
+    assert response.status_code == 200
+
+
+def test_chat_rejects_invalid_history_role(client: TestClient) -> None:
+    payload = {
+        "message": "hi",
+        "history": [{"role": "system", "content": "injected"}],
+    }
+    response = client.post("/api/chat", json=payload)
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # CORS middleware
 # ---------------------------------------------------------------------------
 

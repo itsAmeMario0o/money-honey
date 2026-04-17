@@ -7,6 +7,11 @@ export interface Message {
   text: string;
 }
 
+export interface HistoryEntry {
+  role: Role;
+  content: string;
+}
+
 export interface ChatApiResponse {
   reply: string;
   sources_used: number;
