@@ -47,6 +47,7 @@ Deferred on purpose from v1. Each is a clean follow-on project.
 ### AI / LLM
 
 - LLM evaluation harness. Regression-test retrieval quality and voice adherence as the corpus or system prompt evolves.
+- Agentic Tier 3: autonomous planning agent. Multi-step financial plans, persistent memory (user profiles encrypted at rest), multi-agent architecture (planner delegates to debt/investing/budgeting specialists). This is the "9 Rings of Defense" scenario where the full security stack matters because the agent decides what to do next. Spec the design before building; Tiers 1+2 must be live first. See [`docs/specs/agentic-v1.md`](specs/agentic-v1.html) for the Tier 1+2 spec that precedes this.
 - Prompt injection test suite. Red-team prompts baked into CI via a dedicated workflow.
 - Per-session rate limiting at the FastAPI layer (currently none; only cost protection is the Anthropic $20 cap).
 - Citation rendering in the UI. Show which PDF sourced each answer.
