@@ -20,7 +20,7 @@ sentence-transformers==3.3.1
 faiss-cpu==1.13.2
 pypdf==5.1.0
 
-# --- dev / test only; filter out when building the production image ---
+# --- dev / test only ---
 # These live here (not in a separate requirements-dev.txt) for simplicity.
 # The Dockerfile uses pip with --no-deps filtering via a constraints
 # pattern later if needed; for now the deploy image installs everything
