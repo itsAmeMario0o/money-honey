@@ -119,3 +119,22 @@ jobs:
             aibom-summary.md
           if-no-files-found: ignore
           retention-days: 30
+
+  notify:
+    name: Webex notification
+    needs: [aibom]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      WEBEX_BOT_TOKEN: ${{ secrets.WEBEX_BOT_TOKEN }}
+      WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
+    steps:
+      - name: Send Webex message
+        if: env.WEBEX_BOT_TOKEN != ''
+        uses: chrivand/action-webex-js@v1.0.1
+        with:
+          token: ${{ env.WEBEX_BOT_TOKEN }}
+          roomId: ${{ env.WEBEX_ROOM_ID }}
+          message: |
+            🤖 **AIBOM scan** on `${{ github.ref_name }}`: ${{ needs.aibom.result }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

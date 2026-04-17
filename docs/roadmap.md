@@ -72,6 +72,8 @@ Deferred on purpose from v1. Each is a clean follow-on project.
 ### Operational
 
 - Runbooks in `docs/runbooks/` for incident response (cluster down, tunnel broken, KV lockout, etc.).
+- Webex webhook alerts from Splunk. Configure a Splunk saved-search alert that POSTs to `https://webexapis.com/v1/messages` when Tetragon logs a SIGKILL or policy violation. Reuses the same bot token + room ID as the GitHub CI notifications.
+- Webex webhook alerts from Cloudflare. Cloudflare Notifications (dashboard → Notifications → Create) can fire on tunnel health changes (DEGRADED/DOWN). Target a webhook that relays to the Webex messages API. Wire up after Cloudflare tunnels are live.
 - Smoke tests post-deploy in `deploy.yaml`. Hit `/api/health`, `/api/chat`, the public Cloudflare URL.
 - Synthetic monitoring from an external location (Pingdom / Datadog Synthetics / Splunk Synthetics).
 - Disaster recovery plan. Currently the demo is stateless enough that "rebuild from code in 15 minutes" is the strategy. v2 would formalise this as a test we actually run.

@@ -163,3 +163,23 @@ jobs:
           # Advisory only: this job is continue-on-error at the job
           # level too, so findings surface in logs without blocking
           # PRs. Flip to required after a baseline pass is established.
+
+  notify:
+    name: Webex notification (failure only)
+    needs: [python, typescript, secret-scan, trivy-fs, trivy-k8s]
+    if: failure()
+    runs-on: ubuntu-latest
+    env:
+      WEBEX_BOT_TOKEN: ${{ secrets.WEBEX_BOT_TOKEN }}
+      WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
+    steps:
+      - name: Send Webex message
+        if: env.WEBEX_BOT_TOKEN != ''
+        uses: chrivand/action-webex-js@v1.0.1
+        with:
+          token: ${{ env.WEBEX_BOT_TOKEN }}
+          roomId: ${{ env.WEBEX_ROOM_ID }}
+          message: |
+            ❌ **Quality** failed on `${{ github.ref_name }}`
+            Python: ${{ needs.python.result }} · TypeScript: ${{ needs.typescript.result }} · Secrets: ${{ needs.secret-scan.result }} · Trivy-FS: ${{ needs.trivy-fs.result }} · Trivy-K8s: ${{ needs.trivy-k8s.result }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
