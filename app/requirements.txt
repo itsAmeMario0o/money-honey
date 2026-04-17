@@ -18,7 +18,7 @@ langchain-anthropic>=0.3.15,<0.4.0
 langchain-huggingface>=0.3.1,<0.4.0
 sentence-transformers==3.3.1
 faiss-cpu==1.13.2
-pypdf==5.1.0
+pypdf==6.10.2
 
 # --- dev / test only ---
 # These live here (not in a separate requirements-dev.txt) for simplicity.
