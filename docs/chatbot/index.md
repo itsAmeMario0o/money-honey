@@ -10,6 +10,6 @@ Money Honey is a financial-education chatbot grounded in a small set of PDFs. Th
 | Page | What it covers |
 |---|---|
 | [RAG pipeline](rag-pipeline.html) | LangChain + FAISS + Claude integration. PDF ingestion, chunking, retrieval, prompt construction. |
-| [Money Honey personality](personality.html) | The system-prompt design — voice, traits, conversational guardrails. |
+| [Money Honey personality](personality.html) | The system-prompt design: voice, traits, conversational guardrails. |
 
 The full application spec lives at [`docs/specs/chatbot-v1.md`](../specs/chatbot-v1.html).

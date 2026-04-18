@@ -13,7 +13,7 @@ Everything in [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/blob/ma
 - Azure Key Vault with CSI-mounted secrets, managed identity
 - Caddy ClusterIP reverse proxy inside the cluster
 - Cisco AI Defense gates in CI (AIBOM + Hubness Detector + IDE scanner)
-- CoSAI / OASIS **CodeGuard** Claude Code plugin — agent-side secure-coding rules during generation
+- CoSAI / OASIS CodeGuard Claude Code plugin. Agent-side secure-coding rules injected during generation.
 - Demo workflow scaffolding under `app/tests/demos/`. First demo (CodeGuard path-traversal) landed; more per-layer demos to come
 - GitHub Actions: `quality`, `docker-build`, `deploy`, `aibom`, `hubness-scan`
 - Splunk Enterprise Free on a dedicated Ubuntu VM
