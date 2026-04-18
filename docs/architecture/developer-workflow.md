@@ -32,7 +32,7 @@ Each posts to Webex on completion (pass or fail).
 
 `deploy.yaml` applies only `k8s/app/`, `k8s/frontend/`, `k8s/caddy/`. Network policies, tracing policies, SecretProviderClass, Fluent Bit, OTel, and cloudflared are operator-controlled. Changes there require explicit human review, not a merge-to-main.
 
-This keeps CI fast (no large rollouts on every commit) and makes the security controls themselves harder to weaken through an accidental PR.
+CI stays fast (no large rollouts on every commit) and the security controls are harder to weaken through an accidental PR.
 
 ## Spec-driven discipline
 

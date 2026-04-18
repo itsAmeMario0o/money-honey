@@ -23,7 +23,7 @@ RAG poisoning is a real and under-appreciated risk. This closes it at the PR gat
 
 Runs locally in VS Code while developers write code. Catches common AI-adjacent anti-patterns early: prompt-injection vectors, unsafe tool invocations, overly permissive system-prompt structures, and leaking of prompt context back to the user.
 
-Combined with Layer 6's pre-commit hook (gitleaks for secrets, tfsec for infrastructure), this gives the developer three fast feedback loops before code even leaves their laptop.
+Combined with Layer 6's pre-commit hook (gitleaks for secrets, tfsec for infrastructure), that's three fast feedback loops before code leaves the laptop.
 
 ## CodeGuard (OASIS / CoSAI)
 

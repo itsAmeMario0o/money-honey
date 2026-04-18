@@ -22,10 +22,10 @@ No external embedding API. No external vector database. The whole stack runs in-
 
 ## Why local embeddings
 
-An earlier draft used OpenAI's `text-embedding-3-small`. We swapped that out for two reasons:
+The project originally considered OpenAI's `text-embedding-3-small` but went with local embeddings for two reasons:
 
 1. Security surface. Local embeddings means one less external FQDN on the Cilium egress allowlist. The only outbound API call from the backend is to Claude.
-2. Single-vendor AI story. The user wanted only Anthropic exposure. Anthropic doesn't offer an embeddings API, so local `sentence-transformers` was the cleanest answer.
+2. Single-vendor AI dependency. The project targets Anthropic as the only AI provider. Anthropic doesn't offer an embeddings API, so local `sentence-transformers` was the cleanest answer.
 
 Trade-offs:
 - Pod memory: `all-MiniLM-L6-v2` is ~80 MB. FastAPI pod memory limit is 1 GiB, so plenty of headroom.

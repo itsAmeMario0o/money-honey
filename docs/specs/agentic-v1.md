@@ -9,7 +9,7 @@ Spec for evolving Money Honey from a one-shot RAG chatbot into a tool-using conv
 
 ## 1. Context
 
-Money Honey today is stateless. Each `/api/chat` request sends one message, retrieves 4 RAG chunks, calls Claude once, and forgets everything. The user can't say "what did I just tell you about my car payment?" because there is no conversation history.
+Money Honey today is stateless. Each `/api/chat` request sends one message, retrieves 4 RAG chunks, calls Claude once, and forgets everything. You can't say "what did I just tell you about my car payment?" because there is no conversation history.
 
 Adding memory and tools makes the chatbot genuinely useful for financial education. It also deepens the security story: every new tool is a new process for Tetragon to watch, a new egress path for Cilium to gate, and a new artifact for AIBOM to inventory.
 
