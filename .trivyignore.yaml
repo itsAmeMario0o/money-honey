@@ -32,7 +32,7 @@ vulnerabilities:
 misconfigurations:
   - id: AVD-KSV-0109
     paths:
-      - "k8s/otel/configmap.yaml"
+      - "otel/configmap.yaml"
     # Trivy flags any ConfigMap field named `token:`. OTel Collector's
     # splunk_hec exporter requires that exact field name per its
     # schema, so we can't rename it. The value is
