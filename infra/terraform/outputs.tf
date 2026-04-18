@@ -42,3 +42,14 @@ output "ingress_public_ip" {
   description = "Public IP of the Kubernetes ingress load balancer. Populated in step 4 (K8s manifests)."
   value       = null
 }
+
+output "knowledge_storage_account" {
+  description = "Storage account name for the knowledge-base and hf-cache file shares."
+  value       = azurerm_storage_account.knowledge.name
+}
+
+output "knowledge_storage_key" {
+  description = "Primary access key for the knowledge storage account. Used by the K8s Secret that backs the PV."
+  value       = azurerm_storage_account.knowledge.primary_access_key
+  sensitive   = true
+}

@@ -27,7 +27,7 @@ spec:
         - name: fastapi
           # Built + pushed in step 5. Until then, pods will ImagePullBackOff.
           image: ghcr.io/itsamemario0o/money-honey-app:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000
@@ -45,17 +45,27 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            - name: knowledge-base
+              mountPath: /app/knowledge_base/pdfs
+            - name: hf-cache
+              mountPath: /home/honey/.cache
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            failureThreshold: 30
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/health
               port: 8000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 5
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /api/health
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 15
           resources:
             requests:
@@ -78,3 +88,9 @@ spec:
               secretProviderClass: money-honey-secrets
         - name: tmp
           emptyDir: {}
+        - name: knowledge-base
+          persistentVolumeClaim:
+            claimName: knowledge-base-pvc
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache-pvc

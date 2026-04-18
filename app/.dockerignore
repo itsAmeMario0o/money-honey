@@ -6,7 +6,7 @@ venv/
 .env
 .env.*
 !.env.example
-knowledge_base/pdfs/*.pdf
+# knowledge_base/pdfs/*.pdf  # removed to bake PDFs into image; Azure Files replaces this in v2
 *.faiss
 *.pkl
 .pytest_cache/

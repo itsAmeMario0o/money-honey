@@ -1,0 +1,88 @@
+# Azure File share mounts for the FastAPI backend.
+# The storage account + file shares are created by Terraform (storage.tf).
+# The K8s Secret holds the storage account key so the PV can auth.
+# After terraform apply, populate the secret with:
+#
+#   SA_NAME=$(terraform -chdir=infra/terraform output -raw knowledge_storage_account)
+#   SA_KEY=$(terraform -chdir=infra/terraform output -raw knowledge_storage_key)
+#   kubectl -n money-honey create secret generic azure-files-secret \
+#     --from-literal=azurestorageaccountname=$SA_NAME \
+#     --from-literal=azurestorageaccountkey=$SA_KEY
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: knowledge-base-pv
+  labels:
+    app: fastapi
+    component: storage
+    part-of: money-honey
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  azureFile:
+    secretName: azure-files-secret
+    secretNamespace: money-honey
+    shareName: knowledge-base
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: knowledge-base-pvc
+  namespace: money-honey
+  labels:
+    app: fastapi
+    component: storage
+    part-of: money-honey
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: ""
+  volumeName: knowledge-base-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hf-cache-pv
+  labels:
+    app: fastapi
+    component: storage
+    part-of: money-honey
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  azureFile:
+    secretName: azure-files-secret
+    secretNamespace: money-honey
+    shareName: hf-cache
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hf-cache-pvc
+  namespace: money-honey
+  labels:
+    app: fastapi
+    component: storage
+    part-of: money-honey
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: hf-cache-pv
