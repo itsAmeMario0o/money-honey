@@ -41,23 +41,37 @@ Your Azure account needs at minimum:
 
 ## macOS ARM (Apple Silicon) build setup
 
-AKS nodes run x86_64 (amd64). If your Mac has Apple Silicon (M1/M2/M3/M4), you need to build container images for the right architecture. Docker Desktop handles this automatically with `--platform linux/amd64`, but Colima requires a dedicated x86_64 VM.
+Apple Silicon Macs build ARM container images by default. AKS nodes run x86_64. If you push an ARM image to GHCR and AKS tries to run it, the pod crashes immediately with `exec format error`. The fix is to build inside an x86_64 VM.
+
+Docker Desktop handles this with `--platform linux/amd64`. Colima needs a few extra steps because it runs a dedicated VM and the architecture is locked at creation time.
 
 ### Colima setup for cross-architecture builds
 
+Four packages, one command:
+
 ```zsh
-# Install Colima + Docker CLI + QEMU (for x86_64 emulation)
 brew install colima docker qemu lima-additional-guestagents
-
-# Start an x86_64 VM (not the default ARM one)
-colima start --arch x86_64 --cpu 4 --memory 8
-
-# Verify architecture
-docker info | grep Architecture
-# Expected: x86_64
 ```
 
-If you already have a Colima VM running (ARM), delete it first:
+- `colima` runs the Linux VM.
+- `docker` provides the CLI.
+- `qemu` emulates x86_64 on Apple Silicon.
+- `lima-additional-guestagents` provides the x86_64 guest agent that Lima needs to communicate with the emulated VM.
+
+Start the VM:
+
+```zsh
+colima start --arch x86_64 --cpu 4 --memory 8
+```
+
+Verify:
+
+```zsh
+docker info | grep Architecture
+# Should print: x86_64
+```
+
+If you already have a Colima VM (ARM), it cannot be converted in place. Delete it first:
 
 ```zsh
 colima delete
@@ -66,32 +80,38 @@ colima start --arch x86_64 --cpu 4 --memory 8
 
 ### Building and pushing the backend image
 
+Authenticate to GHCR with a GitHub Personal Access Token that has `write:packages` scope. Paste the raw token, no quotes:
+
 ```zsh
-# Auth to GHCR (raw token, no quotes)
 echo ghp_yourTokenHere | docker login ghcr.io -u itsAmeMario0o --password-stdin
+```
 
-# Build (--no-cache on first run to avoid ARM layer conflicts)
+Build. Use `--no-cache` on the first run to avoid picking up ARM layers from a previous build:
+
+```zsh
 docker build --no-cache -t ghcr.io/itsamemario0o/money-honey-app:latest app/
+```
 
-# Push
+Build takes 10-15 min under QEMU emulation. Subsequent builds with cached layers are faster.
+
+Push and restart the pods:
+
+```zsh
 docker push ghcr.io/itsamemario0o/money-honey-app:latest
-
-# Restart pods to pull the new image
 kubectl -n money-honey rollout restart deployment/fastapi
 ```
 
-Build takes ~10-15 min under QEMU emulation. Subsequent builds are faster if the base layers are cached.
-
 ### Common errors
 
-| Error | Cause | Fix |
+| Error | What happened | Fix |
 |---|---|---|
-| `exec format error` | Image built for ARM, running on x86_64 AKS | Rebuild with `colima start --arch x86_64` |
-| `does not provide the specified platform` | Cached ARM layers from a previous build | Add `--no-cache` to the build command |
+| `exec format error` | ARM image running on x86_64 AKS | Rebuild inside `colima start --arch x86_64` |
+| `does not provide the specified platform` | Cached ARM layers from an earlier build | Add `--no-cache` to the build command |
 | `qemu-img not found` | QEMU not installed | `brew install qemu` |
 | `lima-guestagent.Linux-x86_64` not found | Missing guest agent package | `brew install lima-additional-guestagents` |
-| `architecture cannot be updated` | Existing Colima VM is ARM | `colima delete` then `colima start --arch x86_64` |
-| Broken pipe on Docker socket | VM not fully started | `colima status` to check, then `colima start --arch x86_64 --cpu 4 --memory 8` |
+| `architecture cannot be updated` | Existing Colima VM locked to ARM | `colima delete`, then `colima start --arch x86_64` |
+| Broken pipe on Docker socket | VM did not finish starting | Run `colima status`. If not running, `colima start --arch x86_64 --cpu 4 --memory 8` |
+| `FATA: error starting vm` after deleting | Not enough resources allocated | `colima start --arch x86_64 --cpu 4 --memory 8` |
 
 ## Optional but recommended
 
