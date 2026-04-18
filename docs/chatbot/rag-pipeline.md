@@ -5,7 +5,7 @@ title: RAG Pipeline
 
 # 🔍 RAG pipeline
 
-Money Honey answers with retrieval-augmented generation: every user question triggers a similarity search over a small local PDF corpus, and the top matches are stitched into the system prompt before Claude sees the message. The frontend sends the full conversation history with each request so Claude can reference prior turns. The design is deliberately minimal.
+Every user question triggers a similarity search over a small local PDF corpus. The top matches are stitched into the system prompt before Claude sees the message. The frontend sends the full conversation history with each request so Claude can reference prior turns. Deliberately minimal.
 
 ## Components at a glance
 
@@ -22,15 +22,15 @@ No external embedding API. No external vector database. The whole stack runs in-
 
 ## Why local embeddings
 
-The project originally considered OpenAI's `text-embedding-3-small` but went with local embeddings for two reasons:
+OpenAI's `text-embedding-3-small` was the obvious alternative. Two reasons tipped the decision toward local:
 
-1. Security surface. Local embeddings means one less external FQDN on the Cilium egress allowlist. The only outbound API call from the backend is to Claude.
-2. Single-vendor AI dependency. The project targets Anthropic as the only AI provider. Anthropic doesn't offer an embeddings API, so local `sentence-transformers` was the cleanest answer.
+1. Security surface. Local embeddings means one fewer external FQDN on the Cilium egress allowlist. The only outbound API call from the backend is to Claude.
+2. Single-vendor AI dependency. Anthropic is the only AI provider. Anthropic does not offer an embeddings API, so local `sentence-transformers` was the cleanest fit.
 
 Trade-offs:
-- Pod memory: `all-MiniLM-L6-v2` is ~80 MB. FastAPI pod memory limit is 1 GiB, so plenty of headroom.
-- First-request latency: the model loads from the HuggingFace cache on first use. Cold-start adds 2–5 s; every request after that is cached.
-- Retrieval quality: MiniLM is a 384-dim model; OpenAI's is 1536-dim. For a small corpus (3–5 PDFs), the quality difference is negligible. If corpus size grows past ~50 documents, revisit.
+- Pod memory: `all-MiniLM-L6-v2` is ~80 MB. FastAPI pod memory limit is 1 GiB. Plenty of headroom.
+- First-request latency: the model loads from the HuggingFace cache on first use. Cold-start adds 2-5 s; every request after that is cached.
+- Retrieval quality: MiniLM is a 384-dim model; OpenAI's is 1536-dim. For a small corpus (3-5 PDFs), the quality difference is negligible. If corpus size grows past ~50 documents, revisit.
 
 ## Chunking
 
@@ -38,7 +38,7 @@ Trade-offs:
 - `chunk_size = 1000` characters
 - `chunk_overlap = 150` characters (15%)
 
-The splitter tries to break on paragraph, then sentence, then word, then character. This keeps semantically coherent blocks together when possible. The 15% overlap prevents context from being lost at chunk boundaries.
+The splitter tries to break on paragraph, then sentence, then word, then character. Semantically coherent blocks stay together when possible. The 15% overlap prevents context loss at chunk boundaries.
 
 ## Retrieval
 
@@ -63,9 +63,9 @@ FAISS is in-memory only. On pod startup:
 4. Build a FAISS `IndexFlatL2`
 5. Done. Serve `/api/health` + `/api/chat`.
 
-On pod restart, steps 1–4 repeat. No persistence between pod lifetimes. This is a conscious trade-off for v1:
+On pod restart, steps 1-4 repeat. No persistence between pod lifetimes. Conscious trade-off for v1:
 
-- Pro: pods are stateless at the infrastructure level. No PVC, no external dependencies. Conversation history lives in the frontend's component state, not on the server, so pod restarts don't lose user data.
+- Pro: pods are stateless at the infrastructure level. No PVC, no external dependencies. Conversation history lives in the frontend's component state, not on the server, so pod restarts do not lose user data.
 - Con: cold-start is a few seconds slower than warm.
 - v2 option: persist the FAISS index to a mounted Azure File share or a PVC to skip rebuild.
 
@@ -73,9 +73,9 @@ On pod restart, steps 1–4 repeat. No persistence between pod lifetimes. This i
 
 Per `docs/specs/chatbot-v1.md` edge cases:
 
-- No PDFs: `build_index()` returns `None`. `/api/health` reports `index_ready: false`. `/api/chat` returns 503. Pod doesn't crash.
-- Bad PDF: `PyPDFLoader` raises, pod fails to start. Operator replaces the file. Fail loud, not silent.
-- Claude API fails: current behavior is to surface as 500. Retry logic is a future hardening task.
+- No PDFs: `build_index()` returns `None`. `/api/health` reports `index_ready: false`. `/api/chat` returns 503. Pod does not crash.
+- Bad PDF: `PyPDFLoader` raises, pod fails to start. You replace the file. Fail loud, not silent.
+- Claude API fails: surfaces as 500. Retry logic is a future hardening task.
 
 ## Conversation memory
 
@@ -93,4 +93,4 @@ Key constraints per the agentic-v1 spec:
 
 The `secrets-file-audit` TracingPolicy (Layer 2) watches every file open under `/mnt/secrets/`. The FastAPI pod reads `/mnt/secrets/anthropic-api-key` on startup and (depending on LangChain's behavior) on each request. Every read lands in Splunk.
 
-The `network-connect-audit` TracingPolicy captures every `tcp_connect()` from the pod. That's the ledger for "did FastAPI actually only talk to Claude's API today?"
+The `network-connect-audit` TracingPolicy captures every `tcp_connect()` from the pod. That is the ledger for "did FastAPI actually only talk to Claude's API today?"

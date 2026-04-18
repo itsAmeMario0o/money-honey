@@ -5,9 +5,9 @@ title: Money Honey
 
 # 🍯 Money Honey
 
-A financial-education AI chatbot wrapped in eight independent security layers. The chatbot is the demo. The defense-in-depth architecture is the lesson.
+Most AI chatbot demos skip security entirely. Money Honey does the opposite: eight independent security layers wrap a financial-education chatbot on AKS. The chatbot is the demo. The defense-in-depth architecture is the lesson.
 
-The full architecture deep-dive lives in [ARCHITECTURE.md](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) in the repo.
+Full architecture deep-dive: [ARCHITECTURE.md](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) in the repo.
 
 ## The three-domain framework
 
@@ -17,7 +17,7 @@ The full architecture deep-dive lives in [ARCHITECTURE.md](https://github.com/it
 | 🏗️ Infrastructure | Where the chatbot runs | Cilium (L1), Tetragon (L2), Key Vault + CSI (L3), Splunk (L7) |
 | 👩‍💻 Development workflow | How code becomes production | Cisco AI Defense + CoSAI CodeGuard (L5), GitHub Actions + quality gates (L6) |
 
-No single failure cascades. That's the whole point.
+If one layer fails, the others still hold. That is the whole point.
 
 ## Tech stack at a glance
 

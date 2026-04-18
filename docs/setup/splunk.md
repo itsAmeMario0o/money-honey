@@ -3,9 +3,9 @@ layout: default
 title: Splunk Install (as a Debian package on the VM)
 ---
 
-# 🪵 Splunk install — Debian package on the dedicated VM
+# 🪵 Splunk install: Debian package on the dedicated VM
 
-Splunk Enterprise Free runs as a `.deb` package on the Ubuntu 22.04 VM, not in a container. Installation is driven by `infra/scripts/install-splunk.sh` over SSH. The script is idempotent (safe to re-run).
+Splunk Enterprise Free runs as a `.deb` package on the Ubuntu 22.04 VM, not in a container. `infra/scripts/install-splunk.sh` drives the install over SSH and is idempotent (safe to re-run).
 
 ## What gets installed
 
@@ -18,7 +18,7 @@ Splunk Enterprise Free runs as a `.deb` package on the Ubuntu 22.04 VM, not in a
 
 - `terraform apply` has succeeded (the VM exists and has a public IP)
 - The generated SSH key is at `infra/private_key/splunk.pem` (recovery: `terraform -chdir=infra/terraform output -raw splunk_ssh_private_key > infra/private_key/splunk.pem && chmod 600 infra/private_key/splunk.pem`)
-- You're on a network with outbound internet (the script `wget`s the Splunk deb from download.splunk.com)
+- Your network has outbound internet (the script `wget`s the Splunk deb from download.splunk.com)
 
 ## Run the install
 
@@ -39,7 +39,7 @@ VM_IP=$VM_IP \
   ./infra/scripts/install-splunk.sh
 ```
 
-The script prints progress markers (`→`, `✔`, `✅`) and ends with the UI URL + the cloudflared skip notice.
+The script prints progress markers and ends with the UI URL + the cloudflared skip notice.
 
 ## Log into the Splunk UI
 
@@ -49,7 +49,7 @@ From your browser:
 http://<VM_IP>:8000
 ```
 
-Accept the self-signed cert warning (Splunk Web runs HTTPS on port 8000 by default when installed this way; check the exact protocol from the install output). Log in with username `admin` and the password you set.
+Accept the self-signed cert warning (Splunk Web runs HTTPS on port 8000 by default; check the exact protocol from the install output). Log in with username `admin` and the password you set.
 
 ## Create an HEC token for Fluent Bit + OTel
 
@@ -91,9 +91,9 @@ The `grep -oE` matches a bare UUID. That avoids storing the CLI's `token=<uuid>`
 
 ## Harden post-install (quick wins)
 
-- In Settings → Server settings → General settings, enable TLS for Splunk Web (upload a cert, or generate a local one). Optional if you're routing via Cloudflare Tunnel in the end.
-- Change the `admin` user's password if anyone else used the initial seed password.
-- Disable the unused `main` index if you're routing everything to a dedicated `tetragon` index (saves the 500 MB/day budget).
+- In Settings, Server settings, General settings, enable TLS for Splunk Web (upload a cert or generate a local one). Optional if you are routing via Cloudflare Tunnel.
+- Change the `admin` password if anyone else used the initial seed password.
+- Disable the unused `main` index if you are routing everything to a dedicated `tetragon` index (saves the 500 MB/day budget).
 
 ## Troubleshooting
 
@@ -101,8 +101,8 @@ The `grep -oE` matches a bare UUID. That avoids storing the CLI's `token=<uuid>`
 |---|---|
 | SSH hangs | NSG allows port 22 only from your current public IP. If your IP changed since `terraform apply`, re-run `terraform apply` to refresh the NSG rule. |
 | `dpkg: error processing archive ...` | Rare. Run `sudo dpkg --configure -a` on the VM and retry. |
-| Splunk doesn't start on boot | `sudo systemctl status splunk` and inspect. The script enables boot-start explicitly; a failure here usually means the VM is short on disk. |
-| HEC returns `Server is busy` | Splunk is still initializing indexes. Wait 30–60 s after the first start. |
+| Splunk does not start on boot | `sudo systemctl status splunk` and inspect. The script enables boot-start explicitly; a failure here usually means the VM is short on disk. |
+| HEC returns `Server is busy` | Splunk is still initializing indexes. Wait 30-60 s after the first start. |
 
 ## Reference
 

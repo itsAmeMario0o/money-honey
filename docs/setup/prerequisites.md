@@ -5,7 +5,7 @@ title: Prerequisites
 
 # ✅ Prerequisites
 
-Tools needed on an operator machine (macOS tested; Linux works the same; Windows should use WSL2).
+Tools needed on your machine (macOS tested; Linux works the same; Windows, use WSL2).
 
 ## Required
 
@@ -35,15 +35,15 @@ pre-commit install
 
 Your Azure account needs at minimum:
 
-- Contributor on the subscription (or on the target resource group if you're narrower about it).
-- Storage Blob Data Contributor on the Terraform state storage account. The `terraform-bootstrap` module grants this to you automatically on first apply.
+- Contributor on the subscription (or on the target resource group if you scope it tighter).
+- Storage Blob Data Contributor on the Terraform state storage account. The `terraform-bootstrap` module grants this automatically on first apply.
 
 ## Optional but recommended
 
 | Tool | Why |
 |---|---|
-| `gh` (GitHub CLI) | `brew install gh`. Handy for inspecting workflow runs from terminal. |
-| `jq` | `brew install jq`. Helps parse Azure CLI JSON output in one-liners. |
+| `gh` (GitHub CLI) | `brew install gh`. Handy for inspecting workflow runs from the terminal. |
+| `jq` | `brew install jq`. Parses Azure CLI JSON output in one-liners. |
 | A Webex bot | Build at https://developer.webex.com. Optional CI notifications. |
 | An Anthropic account | https://console.anthropic.com. For the Claude API key that powers the chatbot. |
 

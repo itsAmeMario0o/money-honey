@@ -5,7 +5,7 @@ title: Specifications
 
 # 📐 Specifications
 
-Design specs for each layer of Money Honey. Every spec was written before the code per the `spec-driven-workflow` skill, and stays in sync with the implementation as the project evolves.
+Design specs for each layer of Money Honey. Every spec was written before the code, per the `spec-driven-workflow` skill, and stays in sync with the implementation as the project evolves.
 
 | Spec | Scope |
 |---|---|

@@ -3,11 +3,11 @@ layout: default
 title: Azure Service Principal for CI/CD (OIDC)
 ---
 
-# 🔑 Azure Service Principal for CI/CD (OIDC federation, no client secrets)
+# 🔑 Azure Service Principal for CI/CD (OIDC, no client secrets)
 
-The `deploy.yaml` GitHub Actions workflow needs an Azure identity to talk to AKS. We use OpenID Connect federation: GitHub's short-lived OIDC token is traded for an Azure access token at runtime. No long-lived client secrets are ever stored.
+`deploy.yaml` needs an Azure identity to talk to AKS. OpenID Connect federation trades GitHub's short-lived OIDC token for an Azure access token at runtime. No long-lived client secrets are ever stored.
 
-Takes ~10 minutes. You run these commands once from a terminal that's already `az login`'d.
+Takes ~10 minutes. Run these commands once from a terminal that is already `az login`'d.
 
 ## Step 1: create the app registration
 
@@ -56,7 +56,7 @@ az role assignment create \
 
 ## Step 4: add a federated identity credential
 
-This is the OIDC trust: GitHub's `token.actions.githubusercontent.com` issuer, trusted to exchange tokens for the repo's `main` branch only.
+The OIDC trust: GitHub's `token.actions.githubusercontent.com` issuer, trusted to exchange tokens for the repo's `main` branch only.
 
 ```bash
 az ad app federated-credential create \
@@ -104,13 +104,13 @@ Optional Webex notification secrets (workflows gracefully skip if absent):
 
 ## Step 7: verify
 
-Trigger a run of the `Quality` workflow by pushing any change to `main`, or manually re-run the latest Quality run from the Actions UI. `quality.yaml` doesn't use these secrets, but confirming that the Actions UI loads the secrets pane (and `deploy.yaml` stops failing with auth errors on its next trigger) is the verification step.
+Push any change to `main` or manually re-run the latest Quality run from the Actions UI. `quality.yaml` does not use these secrets, but confirming the Actions UI loads the secrets pane (and `deploy.yaml` stops failing with auth errors on its next trigger) is the verification step.
 
-A first end-to-end proof: merge a PR that touches `app/` or `frontend/`. `docker-build.yaml` builds images to GHCR (no Azure SP needed; it uses the built-in `GITHUB_TOKEN`), and `deploy.yaml` triggers with the Azure SP, pulls the kubeconfig, and runs `kubectl apply`.
+First end-to-end proof: merge a PR that touches `app/` or `frontend/`. `docker-build.yaml` builds images to GHCR (no Azure SP needed; it uses the built-in `GITHUB_TOKEN`), and `deploy.yaml` triggers with the Azure SP, pulls the kubeconfig, and runs `kubectl apply`.
 
 ## Security notes
 
-- The SP does not have admin kubeconfig access. It reads the user kubeconfig which goes through Azure RBAC. If Azure RBAC for Kubernetes is enabled on the cluster, you'd also need to grant the SP's object ID specific Kubernetes RBAC roles (e.g. via an `AzureAD` `ClusterRoleBinding`). For the current v1 setup (`local_account_disabled=false`), the user kubeconfig works directly.
+- The SP does not have admin kubeconfig access. It reads the user kubeconfig, which goes through Azure RBAC. If Azure RBAC for Kubernetes is enabled on the cluster, you also need to grant the SP's object ID specific Kubernetes RBAC roles (e.g. via an `AzureAD` `ClusterRoleBinding`). For the current v1 setup (`local_account_disabled=false`), the user kubeconfig works directly.
 - The federated credential is scoped to `refs/heads/main`. PRs cannot run `deploy.yaml` with this SP.
-- No client secret exists. GitHub's OIDC token is the credential. It's short-lived and scoped to a single workflow run.
+- No client secret exists. GitHub's OIDC token is the credential. Short-lived and scoped to a single workflow run.
 - Rotate the federated credential name, or delete and recreate the SP, if the repo is compromised.

@@ -5,13 +5,13 @@ title: Roll back a Kubernetes deploy
 
 # ⏪ Roll back a Kubernetes deploy
 
-A new image is crashlooping, behavior regressed, or the post-deploy smoke test failed. K8s keeps the previous ReplicaSet, so rollback is a one-line change for the common case.
+New image crashlooping. Behavior regressed. Post-deploy smoke test failed. K8s keeps the previous ReplicaSet, so rollback is one command for the common case.
 
 ## Symptom
 
 - A `Deployment` shows pods in `CrashLoopBackOff`, `ImagePullBackOff`, or `Error` after a recent `kubectl apply`/`rollout`.
-- `/api/health` returns 5xx, or the chat path returns garbage / errors that didn't happen yesterday.
-- `deploy.yaml` succeeded in CI but smoke test failed.
+- `/api/health` returns 5xx, or the chat path returns garbage / errors that were not there yesterday.
+- `deploy.yaml` succeeded in CI but the smoke test failed.
 
 ## Pre-checks
 
@@ -103,12 +103,12 @@ kill %1   # stop the port-forward
 
 For the LLM path specifically, also check:
 
-- Tetragon TracingPolicy didn't kill the pod (look for `process_kprobe` events with `policy_name` matching one of ours in the last 5 min in Splunk).
-- CSI mount didn't fail (`kubectl describe pod` → no `MountVolume.SetUp failed`).
+- Tetragon TracingPolicy did not kill the pod (look for `process_kprobe` events with `policy_name` matching one of yours in the last 5 min in Splunk).
+- CSI mount did not fail (`kubectl describe pod`, no `MountVolume.SetUp failed`).
 
 ## Rollback (yes, of the rollback)
 
-If the rollback itself made things worse (e.g. the previous ReplicaSet's image was also broken and you didn't realize):
+If the rollback itself made things worse (e.g. the previous ReplicaSet's image was also broken and you did not realize):
 
 ```zsh
 # Roll FORWARD to a specific revision.

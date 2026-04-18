@@ -7,7 +7,7 @@ title: Rotate a Key Vault secret
 
 Use this when a secret in `mh-kv-w8fxwb` needs to be replaced: suspected leak, scheduled rotation, or the upstream issuer (Anthropic, Cloudflare, Splunk HEC) gave you a new token.
 
-The CSI Secret Store Driver does NOT auto-pick-up new versions by default. You must roll the consuming pods after writing the new secret.
+The CSI Secret Store Driver does NOT auto-pick-up new versions by default. Roll the consuming pods after writing the new secret.
 
 ## Symptom
 

@@ -5,16 +5,16 @@ title: Roadmap
 
 # 🗺️ Roadmap
 
-## ✅ v1 scope (what we're building now)
+## ✅ v1 scope (building now)
 
-Everything listed in [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/CLAUDE.md) §"Security Architecture: Three Domains, Eight Layers" plus the CI/CD + quality tooling:
+Everything in [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/CLAUDE.md) under "Security Architecture: Three Domains, Eight Layers," plus CI/CD and quality tooling:
 
 - Cilium network identity + Tetragon runtime enforcement on AKS
 - Azure Key Vault with CSI-mounted secrets, managed identity
 - Caddy ClusterIP reverse proxy inside the cluster
 - Cisco AI Defense gates in CI (AIBOM + Hubness Detector + IDE scanner)
 - CoSAI / OASIS **CodeGuard** Claude Code plugin — agent-side secure-coding rules during generation
-- Demo workflow scaffolding under `app/tests/demos/` — first demo (CodeGuard path-traversal) landed; more per-layer demos to come
+- Demo workflow scaffolding under `app/tests/demos/`. First demo (CodeGuard path-traversal) landed; more per-layer demos to come
 - GitHub Actions: `quality`, `docker-build`, `deploy`, `aibom`, `hubness-scan`
 - Splunk Enterprise Free on a dedicated Ubuntu VM
 - Fluent Bit + OpenTelemetry pipelines into Splunk
@@ -34,32 +34,32 @@ Everything listed in [`CLAUDE.md`](https://github.com/itsAmeMario0o/money-honey/
 
 ## 🔮 v2: post-launch hardening
 
-Deferred on purpose from v1. Each is a clean follow-on project.
+Deferred on purpose. Each item is a clean follow-on project.
 
 ### Infrastructure
 
-- ArgoCD / Flux for GitOps-style continuous delivery (replaces the `kubectl apply` step in `deploy.yaml`). Adds drift detection and rollback workflows.
-- ACNS (Azure Container Networking Services) subscription. Unlocks Hubble flow visibility, FQDN-based network policies, and L7 (HTTP / gRPC) policies. About $30/mo at our cluster size.
-- Isovalent Enterprise via Azure Marketplace. BGP peering, Tetragon enterprise features, Hubble UI. Consider only if we go production-adjacent.
-- Private AKS cluster. API server moves to a private endpoint only reachable through VNet peering or Express Route. Raises the bar for attacker API access.
-- Azure Bastion or Cloudflare SSH tunnel. Eliminate the Splunk VM's public IP entirely (currently kept for SSH admin).
+- ArgoCD / Flux for GitOps continuous delivery (replaces the `kubectl apply` step in `deploy.yaml`). Adds drift detection and rollback workflows.
+- ACNS (Azure Container Networking Services) subscription. Unlocks Hubble flow visibility, FQDN-based network policies, and L7 (HTTP / gRPC) policies. About $30/mo at this cluster size.
+- Isovalent Enterprise via Azure Marketplace. BGP peering, Tetragon enterprise features, Hubble UI. Consider only if the project goes production-adjacent.
+- Private AKS cluster. The API server moves to a private endpoint reachable only through VNet peering or ExpressRoute. Raises the bar for attacker API access.
+- Azure Bastion or Cloudflare SSH tunnel. Eliminates the Splunk VM's public IP entirely (currently kept for SSH admin).
 
 ### AI / LLM
 
 - LLM evaluation harness. Regression-test retrieval quality and voice adherence as the corpus or system prompt evolves.
-- Agentic Tier 3: autonomous planning agent. Multi-step financial plans, persistent memory (user profiles encrypted at rest), multi-agent architecture (planner delegates to debt/investing/budgeting specialists). This is the "9 Rings of Defense" scenario where the full security stack matters because the agent decides what to do next. Spec the design before building; Tiers 1+2 must be live first. See [`docs/specs/agentic-v1.md`](specs/agentic-v1.html) for the Tier 1+2 spec that precedes this.
+- Agentic Tier 3: autonomous planning agent. Multi-step financial plans, persistent memory (user profiles encrypted at rest), multi-agent architecture (planner delegates to debt/investing/budgeting specialists). This is the "9 Rings of Defense" scenario where the full security stack matters, because the agent decides what to do next. Spec the design before building; Tiers 1+2 must be live first. See [`docs/specs/agentic-v1.md`](specs/agentic-v1.html) for the Tier 1+2 spec.
 - Prompt injection test suite. Red-team prompts baked into CI via a dedicated workflow.
 - Per-session rate limiting at the FastAPI layer (currently none; only cost protection is the Anthropic $20 cap).
 - Citation rendering in the UI. Show which PDF sourced each answer.
 - Multi-language support. English-only in v1.
 - Hybrid search (BM25 + vector) if the corpus grows past ~50 docs.
-- Persisted FAISS index on an Azure File share. Skip the rebuild on pod restart.
-- Bump fastapi 0.115.0 → 0.116+ so the starlette pin can move to 0.40.0+ and clear CVE-2024-47874 in `.trivyignore.yaml`. Currently safe because we expose JSON-only endpoints (no multipart parser invoked), but the dependency-tree refresh is overdue.
-- Migrate langchain 0.3.x → 1.x. Currently pinned to 0.3.27 because the sub-packages cohere there. langchain-core 1.2.22 fixes CVE-2026-34070 (path traversal in legacy `load_prompt`). We're not exposed (we don't call the function; see `.trivyignore.yaml` rationale), but a clean migration eliminates the ignore and gets us on a maintained line. Major-version bump means breaking API changes; budget a real iteration.
+- Persisted FAISS index on an Azure File share. Skips the rebuild on pod restart.
+- Bump fastapi 0.115.0 to 0.116+ so the starlette pin can move to 0.40.0+ and clear CVE-2024-47874 in `.trivyignore.yaml`. Currently safe because only JSON endpoints are exposed (no multipart parser invoked), but the dependency refresh is overdue.
+- Migrate langchain 0.3.x to 1.x. Currently pinned to 0.3.27 because the sub-packages cohere there. langchain-core 1.2.22 fixes CVE-2026-34070 (path traversal in legacy `load_prompt`). The project is not exposed (it does not call the function; see `.trivyignore.yaml` rationale), but a clean migration eliminates the ignore and lands on a maintained line. Major-version bump means breaking API changes; budget a real iteration.
 
 ### Observability
 
-- OTel `token_file:` refactor. Replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. Removes the env-var / K8s-Secret hop entirely (the token never sits in a Pod env or K8s Secret object; it only exists as a file mounted from Key Vault). Lets us delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
+- OTel `token_file:` refactor. Replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. The token never sits in a Pod env or K8s Secret object; it only exists as a file mounted from Key Vault. Lets you delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
 - Splunk dashboards as code. Ship `splunk/dashboards/*.xml` (or JSON) defining the views that matter: Tetragon events per minute, policy violations by pod, egress allowlist hits, AIBOM classifier runs, HEC ingest rate vs. 500 MB/day quota. Definitions can be written now; they apply once Splunk has real event flow.
 
 ### Developer workflow
@@ -73,18 +73,18 @@ Deferred on purpose from v1. Each is a clean follow-on project.
 ### Operational
 
 - Runbooks in `docs/runbooks/` for incident response (cluster down, tunnel broken, KV lockout, etc.).
-- Webex webhook alerts from Splunk. Configure a Splunk saved-search alert that POSTs to `https://webexapis.com/v1/messages` when Tetragon logs a SIGKILL or policy violation. Reuses the same bot token + room ID as the GitHub CI notifications.
-- Webex webhook alerts from Cloudflare. Cloudflare Notifications (dashboard → Notifications → Create) can fire on tunnel health changes (DEGRADED/DOWN). Target a webhook that relays to the Webex messages API. Wire up after Cloudflare tunnels are live.
-- ChatOps via the Webex bot. Make `money-honey-ci` interactive so it receives commands (`status`, `pods`, `deploy`, `splunk query`, `costs`, `help`) and responds in the space. Preferred architecture: Azure Function (Python, Consumption plan) as the webhook receiver. Webex POSTs events to the function; the function validates the webhook signature, parses the command, calls the appropriate API (GitHub, AKS, Splunk), and responds via the Webex messages API. Azure Front Door or API Management can front it with WAF + rate limiting. Function key + optional AAD auth restricts access. This satisfies the Cisco IT requirement of not directly exposing the bot. No Node.js frameworks (botkit is archived; webex-node-bot-framework is stale). Raw Webex webhooks + Python. Needs a spec at `docs/specs/chatops-v1.md` and Terraform for the Azure Function resource before implementation. Evaluated and rejected: webex-node-bot-framework (Node.js mismatch, 3 years stale), botkit (archived Sep 2024), Webex websocket mode (not production-recommended by Cisco). Once the Azure Function is live, upgrade CI notifications and ChatOps responses to Webex Adaptive Cards (Buttons & Cards API, https://developer.webex.com/messaging/docs/buttons-and-cards). Cards give color-coded status, collapsible sections, and action buttons ("Re-run build", "View logs"). Button clicks send `attachmentActions` webhooks back to the same Azure Function for handling.
+- Webex webhook alerts from Splunk. A saved-search alert POSTs to `https://webexapis.com/v1/messages` when Tetragon logs a SIGKILL or policy violation. Reuses the same bot token + room ID as GitHub CI notifications.
+- Webex webhook alerts from Cloudflare. Cloudflare Notifications (dashboard, Notifications, Create) can fire on tunnel health changes (DEGRADED/DOWN). Target a webhook that relays to the Webex messages API. Wire up after Cloudflare tunnels are live.
+- ChatOps via the Webex bot. Make `money-honey-ci` interactive so it receives commands (`status`, `pods`, `deploy`, `splunk query`, `costs`, `help`) and responds in the space. Preferred architecture: Azure Function (Python, Consumption plan) as the webhook receiver. Webex POSTs events to the function; the function validates the webhook signature, parses the command, calls the appropriate API (GitHub, AKS, Splunk), and responds via the Webex messages API. Azure Front Door or API Management can front it with WAF + rate limiting. Function key + optional AAD auth restricts access. Satisfies the Cisco IT requirement of not directly exposing the bot. No Node.js frameworks (botkit is archived; webex-node-bot-framework is stale). Raw Webex webhooks + Python. Needs a spec at `docs/specs/chatops-v1.md` and Terraform for the Azure Function resource before implementation. Evaluated and rejected: webex-node-bot-framework (Node.js mismatch, 3 years stale), botkit (archived Sep 2024), Webex websocket mode (not production-recommended by Cisco). Once the Azure Function is live, upgrade CI notifications and ChatOps responses to Webex Adaptive Cards (Buttons & Cards API, https://developer.webex.com/messaging/docs/buttons-and-cards). Cards give color-coded status, collapsible sections, and action buttons ("Re-run build", "View logs"). Button clicks send `attachmentActions` webhooks back to the same Azure Function for handling.
 - Smoke tests post-deploy in `deploy.yaml`. Hit `/api/health`, `/api/chat`, the public Cloudflare URL.
 - Synthetic monitoring from an external location (Pingdom / Datadog Synthetics / Splunk Synthetics).
-- Disaster recovery plan. Currently the demo is stateless enough that "rebuild from code in 15 minutes" is the strategy. v2 would formalise this as a test we actually run.
+- Disaster recovery plan. The demo is currently stateless enough that "rebuild from code in 15 minutes" works. v2 would formalize that as a test you actually run.
 
-## 🎯 What we're NOT building
+## 🎯 Not building
 
-Things explicitly out of scope even for v2 unless requirements change:
+Out of scope even for v2 unless requirements change:
 
 - Multi-tenant support / user accounts / PII handling
-- Real user authentication (Cloudflare Access is enough for a demo; a full SSO integration isn't on the roadmap)
-- SOC 2 / HIPAA compliance evidence. That's a different project scope.
+- Full SSO integration (Cloudflare Access is enough for a demo)
+- SOC 2 / HIPAA compliance evidence. Different project scope.
 - Selling this as a product

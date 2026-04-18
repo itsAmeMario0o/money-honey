@@ -3,19 +3,19 @@ layout: default
 title: Developer Workflow Security
 ---
 
-# 👩‍💻 Developer Workflow Security (Layer 6)
+# 👩‍💻 Developer workflow security (Layer 6)
 
-The third domain protects the path code takes from a developer's laptop to the running cluster. A compromised CI/CD system can ship arbitrary code to production, so it gets the same defense-in-depth treatment as the runtime.
+A compromised CI/CD system can ship arbitrary code to production. The third domain protects the path from a developer's laptop to the running cluster with the same layering philosophy as the runtime itself.
 
-## Three independent lines of defense for secrets
+## Three lines of defense for secrets
+
+A secret committed to Git is a secret in the wild. One layer can miss it. Three layers, operating independently, make "I accidentally committed a secret" nearly impossible.
 
 | Layer | Where | Tool |
 |---|---|---|
 | 1 | Developer's machine | `.pre-commit-config.yaml`: gitleaks (with Azure-specific rules in `.gitleaks.toml`), tfsec, black, ruff, private-key detection |
 | 2 | CI on every PR + push | `.github/workflows/quality.yaml`: pytest, vitest, mypy, ruff, black, tsc, eslint, prettier, plus gitleaks + tfsec again |
 | 3 | GitHub server side | Secret Protection with Push Protection: vendor-maintained patterns, blocks pushes at the wire |
-
-Any one of them catches a typical mistake. All three together make "I accidentally committed a secret" nearly impossible.
 
 ## Four deploy-time workflows
 
@@ -26,13 +26,13 @@ Any one of them catches a typical mistake. All three together make "I accidental
 | [`aibom.yaml`](https://github.com/itsAmeMario0o/money-honey/blob/main/.github/workflows/aibom.yaml) | PR affecting `app/` or `frontend/` | Cisco AIBOM scan, blocks on untracked AI deps |
 | [`hubness-scan.yaml`](https://github.com/itsAmeMario0o/money-honey/blob/main/.github/workflows/hubness-scan.yaml) | PR affecting `app/knowledge_base/` | Cisco Hubness Detector for RAG poisoning |
 
-Each posts to Webex on completion (pass or fail).
+Each posts to Webex on completion, pass or fail.
 
 ## Scope deliberately limited
 
 `deploy.yaml` applies only `k8s/app/`, `k8s/frontend/`, `k8s/caddy/`. Network policies, tracing policies, SecretProviderClass, Fluent Bit, OTel, and cloudflared are operator-controlled. Changes there require explicit human review, not a merge-to-main.
 
-CI stays fast (no large rollouts on every commit) and the security controls are harder to weaken through an accidental PR.
+CI stays fast (no large rollouts on every commit), and the security controls are harder to weaken through an accidental PR.
 
 ## Spec-driven discipline
 

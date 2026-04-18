@@ -5,7 +5,7 @@ title: Terraform Apply Walkthrough
 
 # 🌍 Terraform apply walkthrough
 
-Provisioning Azure resources happens in two modules to solve the chicken-and-egg of storing state in the backend you're about to create:
+Provisioning happens in two modules because the state backend is itself an Azure resource you have to create first:
 
 1. `infra/terraform-bootstrap/`: creates the Azure Storage Account that holds remote state. Uses local state. Only runs once.
 2. `infra/terraform/`: the main stack (AKS, Key Vault, Splunk VM, etc.). Uses remote state in the SA created above.
@@ -39,7 +39,7 @@ Estimated duration: ~10–12 minutes. AKS is the slowest component.
 
 ## Known gotchas
 
-- Stale state lock. If a previous run was interrupted, `terraform apply` may fail with "state blob is already locked". Recovery:
+- Stale state lock. If a previous run was interrupted, `terraform apply` fails with "state blob is already locked." Recovery:
   ```bash
   az storage blob lease break \
     --account-name mhtfstatemjr26 \
@@ -47,9 +47,9 @@ Estimated duration: ~10–12 minutes. AKS is the slowest component.
     --blob-name money-honey.tfstate \
     --auth-mode login
   ```
-- AKS service CIDR overlap. The cluster's internal service CIDR (`172.16.0.0/16` in variables) must not overlap the VNet. Change `aks_service_cidr` and `aks_dns_service_ip` variables if you use a VNet in the 172.16.x range.
+- AKS service CIDR overlap. The cluster's service CIDR (`172.16.0.0/16` in variables) must not overlap the VNet. Change `aks_service_cidr` and `aks_dns_service_ip` if your VNet sits in the 172.16.x range.
 - vCPU quota. Default `node_sku` is `Standard_B2s` (old B-series). If `standardBSFamily` quota is exhausted in your region, switch to `Standard_D2s_v3`. Any region should have plenty of `standardDSv3Family` quota.
-- Helm provider auth. The Terraform Helm provider reads `kube_admin_config[0]` from the cluster output. This requires `local_account_disabled = false` (the v1 default). Flipping to `true` means switching to kubelogin exec (documented in `aks.tf`).
+- Helm provider auth. The Terraform Helm provider reads `kube_admin_config[0]` from the cluster output. Requires `local_account_disabled = false` (the v1 default). Flipping to `true` means switching to kubelogin exec (documented in `aks.tf`).
 
 ## Outputs
 
@@ -80,4 +80,4 @@ cd ../terraform-bootstrap
 terraform destroy       # ~1 minute
 ```
 
-Soft-delete on the Key Vault and blob container means the names stick around for a few days after destroy. If you want to recycle the SA name immediately, purge via Azure Portal.
+Soft-delete on the Key Vault and blob container means the names stick around for a few days after destroy. To recycle the storage account name immediately, purge via Azure Portal.

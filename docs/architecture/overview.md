@@ -3,15 +3,15 @@ layout: default
 title: Architecture Overview
 ---
 
-# 🏛️ Architecture Overview
+# 🏛️ Architecture overview
 
-Money Honey is structured around three domains of security, each with its own independent controls. If one layer fails, the others still hold. No single compromise cascades.
+Three security domains, each with independent controls. If one layer fails, the others hold. No single compromise cascades.
 
-This page is the summary. For the full narrative, read [`ARCHITECTURE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) in the repo.
+This page is the summary. For the full version, read [`ARCHITECTURE.md`](https://github.com/itsAmeMario0o/money-honey/blob/main/ARCHITECTURE.md) in the repo.
 
 ## 🌐 Domain 1: User access & edge
 
-Every request from the public internet terminates at Cloudflare's edge (Layer 8). `cloudflared` runs on each origin and dials outbound, so origins have no public inbound app ports. Cloudflare Access Free tier enforces email-domain allowlists before a single byte reaches the app. TLS is handled by Cloudflare; Caddy inside the cluster is ClusterIP-only.
+Every request from the public internet terminates at Cloudflare's edge (Layer 8). `cloudflared` runs on each origin and dials outbound, so origins have no public inbound app ports. Cloudflare Access Free tier enforces email-domain allowlists before a single byte reaches the app. Cloudflare handles TLS; Caddy inside the cluster is ClusterIP-only.
 
 ## 🏗️ Domain 2: Infrastructure
 
@@ -45,9 +45,9 @@ Claude API (egress-restricted)
 Response flows back through the tunnel
 ```
 
-Every step is audited in Splunk via Fluent Bit (JSON events) + OTel Collector (metrics).
+Splunk audits every step via Fluent Bit (JSON events) + OTel Collector (metrics).
 
-## Detailed layer pages
+## Layer deep-dives
 
 - [Infrastructure (layers 1, 2, 3, 7)](infrastructure.html)
 - [AI / LLM security (layer 5)](ai-security.html)

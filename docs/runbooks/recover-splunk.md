@@ -5,7 +5,7 @@ title: Recover the Splunk VM
 
 # 📊 Recover the Splunk VM
 
-The Splunk VM is the only stateful node outside AKS. If it dies, you lose the search head, HEC ingest, and the cloudflared sidecar that publishes Splunk web. Disk is persistent, so most failures are recoverable without data loss.
+The Splunk VM is the only stateful node outside AKS. If it dies, you lose the search head, HEC ingest, and the cloudflared sidecar that publishes Splunk web. The disk is persistent. Most failures are recoverable without data loss.
 
 ## Symptom
 
@@ -59,7 +59,7 @@ sudo systemctl restart splunk
 EOS
 ```
 
-If disk is full, the offender is almost always `/opt/splunk/var/log/splunk/`. Splunk Free has a 500 MB/day index quota. Over-quota does NOT delete on its own, but log churn from a restart loop can fill the disk. Trim the largest files in `/opt/splunk/var/log/splunk/` after stopping splunkd.
+If the disk is full, the culprit is almost always `/opt/splunk/var/log/splunk/`. Splunk Free has a 500 MB/day index quota. Over-quota does NOT delete on its own, but log churn from a restart loop can fill the disk. Trim the largest files in `/opt/splunk/var/log/splunk/` after stopping splunkd.
 
 ### Case C: VM is running, Splunk is up, HEC still refuses
 
@@ -73,7 +73,7 @@ sudo /opt/splunk/bin/splunk http-event-collector list -auth admin:'<password>'
 EOS
 ```
 
-If HEC is listening but cluster pods still can't reach it, the AKS subnet → Splunk subnet path is broken. Re-check the NSG `allow-hec-aks-subnet` rule allows `10.0.0.0/22 → :8088`.
+If HEC is listening but cluster pods still cannot reach it, the AKS subnet to Splunk subnet path is broken. Re-check the NSG `allow-hec-aks-subnet` rule allows `10.0.0.0/22` to port `8088`.
 
 ### Case D: VM is unreachable (full reboot needed)
 
@@ -84,7 +84,7 @@ az vm restart -g money-honey-rg -n money-honey-splunk
 
 ### Case E: Hard rebuild (last resort, data preserved)
 
-The VM uses a managed OS disk separate from the data disk holding `/opt/splunk`. If the OS disk corrupts, you can re-create the VM and re-attach the data disk via Terraform. Because this is destructive in scope, it's deliberately NOT scripted. Pause, re-read `infra/terraform/splunk-vm.tf` before running, and confirm the data disk is excluded from any `taint` you do.
+The VM uses a managed OS disk separate from the data disk holding `/opt/splunk`. If the OS disk corrupts, you can re-create the VM and re-attach the data disk via Terraform. Because this is destructive, it is deliberately NOT scripted. Pause. Re-read `infra/terraform/splunk-vm.tf` before running. Confirm the data disk is excluded from any `taint` you apply.
 
 ## Verification
 

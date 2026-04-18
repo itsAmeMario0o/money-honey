@@ -5,7 +5,7 @@ title: Chatbot internals
 
 # 💬 Chatbot internals
 
-Money Honey is a financial-education chatbot grounded in a small set of PDFs. The chatbot is the demo; the security architecture is the lesson — but the demo still has to work.
+Money Honey is a financial-education chatbot grounded in a small set of PDFs. The security architecture is the lesson, but the demo still has to work.
 
 | Page | What it covers |
 |---|---|
