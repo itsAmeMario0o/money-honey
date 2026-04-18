@@ -24,7 +24,7 @@ She uses "babe," "honey," and "sweetheart" naturally. Doesn't break character. D
 
 The voice is encoded in a single string: `app/personality.py::SYSTEM_PROMPT`. Every `/api/chat` turn prepends this system prompt to the user message, with the `{context}` placeholder filled in by the top-4 RAG chunks from the PDF corpus.
 
-No tool calls. No function-calling tricks. Just a well-crafted system prompt + retrieval context + Claude Haiku 4.5.
+No tool calls yet (Tier 2 of the agentic spec adds financial tools). The current pipeline is a system prompt + retrieval context + conversation history + Claude Haiku 4.5. The history lets Money Honey reference what you said earlier in the conversation without you repeating it.
 
 ## Example exchanges
 

@@ -5,7 +5,7 @@ title: RAG Pipeline
 
 # 🔍 RAG pipeline
 
-Money Honey answers with retrieval-augmented generation: every user question triggers a similarity search over a small local PDF corpus, and the top matches are stitched into the system prompt before Claude sees the message. The design is deliberately minimal.
+Money Honey answers with retrieval-augmented generation: every user question triggers a similarity search over a small local PDF corpus, and the top matches are stitched into the system prompt before Claude sees the message. The frontend sends the full conversation history with each request so Claude can reference prior turns. The design is deliberately minimal.
 
 ## Components at a glance
 
@@ -49,9 +49,9 @@ def retrieve_context(index: FAISS, question: str, k: int = 4) -> str:
     return "\n\n---\n\n".join(doc.page_content for doc in results)
 ```
 
-Top 4 chunks by cosine similarity, joined with a delimiter, passed to the LLM as the `{context}` placeholder in the Money Honey system prompt.
+Top 4 chunks by cosine similarity, joined with a delimiter, passed to the LLM as the `{context}` placeholder in the Money Honey system prompt. Retrieval uses only the current message, not the full conversation history. This keeps retrieval focused on the immediate question and avoids context dilution from prior turns.
 
-Four chunks × ~1000 chars each = ~4000 chars of retrieval context per turn. Well under Claude's input budget even accounting for the system prompt and history.
+Four chunks × ~1000 chars each = ~4000 chars of retrieval context per turn. Well under Claude's input budget even accounting for the system prompt, conversation history, and the current message.
 
 ## Index lifecycle
 
@@ -65,7 +65,7 @@ FAISS is in-memory only. On pod startup:
 
 On pod restart, steps 1–4 repeat. No persistence between pod lifetimes. This is a conscious trade-off for v1:
 
-- Pro: stateless pods, no PVC, no external dependencies.
+- Pro: pods are stateless at the infrastructure level. No PVC, no external dependencies. Conversation history lives in the frontend's component state, not on the server, so pod restarts don't lose user data.
 - Con: cold-start is a few seconds slower than warm.
 - v2 option: persist the FAISS index to a mounted Azure File share or a PVC to skip rebuild.
 
@@ -76,6 +76,18 @@ Per `docs/specs/chatbot-v1.md` edge cases:
 - No PDFs: `build_index()` returns `None`. `/api/health` reports `index_ready: false`. `/api/chat` returns 503. Pod doesn't crash.
 - Bad PDF: `PyPDFLoader` raises, pod fails to start. Operator replaces the file. Fail loud, not silent.
 - Claude API fails: current behavior is to surface as 500. Retry logic is a future hardening task.
+
+## Conversation memory
+
+The frontend maintains a list of prior messages (`{role, content}` pairs) in React component state and sends them with every `/api/chat` request. The backend assembles the Claude message chain as: system prompt → trimmed history → current message.
+
+Key constraints per the agentic-v1 spec:
+
+- History is session-scoped. Closing the browser tab clears it. No server-side persistence.
+- History is capped at 20 turns (10 user + 10 assistant). Older turns are dropped first.
+- RAG retrieval uses only the current message, not the history. Claude sees the history for conversational coherence, but the vector search stays focused.
+- The `history` field is optional. Omitting it or sending `[]` preserves backward compatibility with one-shot API clients.
+- Only `"user"` and `"assistant"` roles are accepted. Sending `"system"` in the history array returns 422.
 
 ## What Tetragon sees
 
