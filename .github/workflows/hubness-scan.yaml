@@ -163,10 +163,8 @@ jobs:
     steps:
       - name: Send Webex message
         if: env.WEBEX_BOT_TOKEN != ''
-        uses: chrivand/action-webex-js@v1.0.1
-        with:
-          token: ${{ env.WEBEX_BOT_TOKEN }}
-          roomId: ${{ env.WEBEX_ROOM_ID }}
-          message: |
-            🔍 **Hubness scan** on `${{ github.ref_name }}`: ${{ needs.hubness.result }}
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -X POST https://webexapis.com/v1/messages \
+            -H "Authorization: Bearer $WEBEX_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"roomId\":\"$WEBEX_ROOM_ID\",\"markdown\":\"🔍 **Hubness scan** on \`${{ github.ref_name }}\`: ${{ needs.hubness.result }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
