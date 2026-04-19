@@ -288,7 +288,7 @@ ArgoCD deferred to v2. GitHub Actions + kubectl apply for deployment. AIBOM for 
 Only Helm release on this cluster. Chart version 1.3.0 pinned. Process cred tracking, namespace tracking, Prometheus on 2112, runtime hooks, JSON export.
 
 ### Worker nodes
-3x Standard_B4ms (4 vCPU, 16 GB RAM). Upgraded from Standard_B2s because sentence-transformers PDF embedding OOMKills at 2 GiB and two 3 GiB pods cannot fit on 4 GB nodes alongside system workloads. 3 nodes required for Cilium.
+3x Standard_D2s_v3 (4 vCPU, 16 GB RAM). Upgraded from Standard_B2s because sentence-transformers PDF embedding OOMKills at 2 GiB and two 3 GiB pods cannot fit on 4 GB nodes alongside system workloads. 3 nodes required for Cilium.
 
 ---
 
@@ -447,7 +447,7 @@ Webex Bot via `chrivand/action-webex-js@v1.0.1`. Secrets: `WEBEX_BOT_TOKEN`, `WE
 | Component | SKU | Monthly |
 |-----------|-----|---------|
 | AKS control plane | Free tier | $0 |
-| AKS workers (3x) | Standard_B4ms | ~$120 |
+| AKS workers (3x) | Standard_D2s_v3 | ~$120 |
 | AKS disks (3x 32 GB) | Standard SSD | ~$7.20 |
 | Splunk VM | Standard_B2ms | ~$61 |
 | Splunk disk | 64 GB SSD | ~$4.80 |

@@ -83,9 +83,9 @@ variable "node_count" {
 }
 
 variable "node_sku" {
-  description = "VM SKU for AKS worker nodes. Standard_B4ms gives 4 vCPU / 16 GB RAM per node, enough for sentence-transformers embedding + FastAPI + all system pods without OOMKill."
+  description = "VM SKU for AKS worker nodes. Standard_D2s_v3 gives 2 vCPU / 8 GB RAM per node. Enough for 3 GiB FastAPI pods + system workloads. DSv3 family has ample quota in all regions."
   type        = string
-  default     = "Standard_B4ms"
+  default     = "Standard_D2s_v3"
 }
 
 // ---- Key Vault ----

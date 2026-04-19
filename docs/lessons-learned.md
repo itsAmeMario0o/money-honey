@@ -21,7 +21,7 @@ Docker Desktop handles this transparently with `--platform linux/amd64`. If you 
 
 The FastAPI pod loads sentence-transformers (~80 MB model), reads 28 MB of PDFs, splits them into ~1500 chunks, and embeds every chunk into a 384-dimensional vector. All of this happens during module-level initialization before uvicorn even starts.
 
-With a 1 GiB memory limit, the pod was killed mid-embedding. The first symptom was empty logs (the process died before producing any output) and a `137` exit code in `kubectl describe pod`. Bumped to 2 GiB, same result. Finally resolved at 3 GiB, but the original `Standard_B2s` nodes (4 GB RAM each) could not fit two 3 GiB pods alongside system workloads. Upgraded to `Standard_B4ms` (16 GB RAM per node).
+With a 1 GiB memory limit, the pod was killed mid-embedding. The first symptom was empty logs (the process died before producing any output) and a `137` exit code in `kubectl describe pod`. Bumped to 2 GiB, same result. Finally resolved at 3 GiB, but the original `Standard_B2s` nodes (4 GB RAM each) could not fit two 3 GiB pods alongside system workloads. First tried `Standard_B4ms` (16 GB RAM) but hit vCPU quota limits on the `standardBSFamily` in eastus. Landed on `Standard_D2s_v3` (8 GB RAM per node, `standardDSv3Family` with 50 vCPUs available).
 
 The lesson: if your RAG pipeline embeds at startup, the memory limit must account for the peak of the embedding run, not the steady-state serving footprint. sentence-transformers with MiniLM and ~1500 chunks peaks around 2.5 GB. Adding a safety margin puts the limit at 3 GiB.
 

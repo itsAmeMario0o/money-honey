@@ -48,7 +48,7 @@ Estimated duration: ~10–12 minutes. AKS is the slowest component.
     --auth-mode login
   ```
 - AKS service CIDR overlap. The cluster's service CIDR (`172.16.0.0/16` in variables) must not overlap the VNet. Change `aks_service_cidr` and `aks_dns_service_ip` if your VNet sits in the 172.16.x range.
-- vCPU quota. Default `node_sku` is `Standard_B4ms` (4 vCPU / 16 GB RAM). If `standardBSFamily` quota is exhausted in your region, switch to `Standard_D4s_v3`. Any region should have plenty of `standardDSv3Family` quota.
+- vCPU quota. Default `node_sku` is `Standard_D2s_v3` (2 vCPU / 8 GB RAM, `standardDSv3Family`). This family has ample quota in all regions. The project started on `Standard_B2s` but the 4 GB RAM per node caused OOMKill during PDF embedding.
 - Helm provider auth. The Terraform Helm provider reads `kube_admin_config[0]` from the cluster output. Requires `local_account_disabled = false` (the v1 default). Flipping to `true` means switching to kubelogin exec (documented in `aks.tf`).
 
 ## Outputs
