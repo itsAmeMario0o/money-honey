@@ -77,6 +77,12 @@ From a remote office, `kubectl` commands failed with `read: connection reset by 
 
 No server-side fix. Options: personal hotspot, VPN, or asking IT to allowlist the AKS FQDN. The project documents this in STATUS.md so future operators don't spend hours debugging the wrong layer.
 
+## AKS node pool VM size change requires temporary pool
+
+Changing `vm_size` on the default node pool is not an in-place update. AKS needs `temporary_name_for_rotation` in the Terraform config. It creates a temporary node pool with the new SKU, drains the old nodes, migrates all workloads, then deletes the old pool. Without the field, Terraform fails with a clear error listing every property that requires rotation.
+
+The rotation takes 15-20 minutes. All pods restart on the new nodes. PVCs, Secrets, and ConfigMaps survive because they are cluster-scoped state, not node-local state.
+
 ## Tetragon doubled log path
 
 The Tetragon Helm chart concatenates `exportFilename` onto its own `exportDirectory`. Passing a full path like `/var/run/cilium/tetragon/tetragon.log` as `exportFilename` produced a doubled path: `/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log`. Fluent Bit was configured to tail the doubled path, so it worked, but the setup was fragile and confusing.
