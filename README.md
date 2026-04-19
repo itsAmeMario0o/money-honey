@@ -138,3 +138,4 @@ Read [`CLAUDE.md`](./CLAUDE.md) §Rules before editing anything. Every change st
 - [`docs/setup/cloudflare-tunnel.md`](./docs/setup/cloudflare-tunnel.md) — Phase 2 walkthrough for the public edge
 - [`docs/runbooks/`](./docs/runbooks/) — Ops playbooks: rotate KV secret, recover Splunk, tunnel outage, deploy rollback
 - [`app/tests/demos/`](./app/tests/demos/) — Per-layer demo artifacts (CodeGuard path-traversal demo today; more layers landing in the demo workflow)
+- [`docs/lessons-learned.md`](./docs/lessons-learned.md) — Build challenges and how they were resolved: ARM vs x86_64, OOMKill, read-only filesystems, Webex action breakage, and more

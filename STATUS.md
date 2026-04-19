@@ -6,7 +6,7 @@ Last updated 2026-04-16. Live docs at https://itsamemario0o.github.io/money-hone
 
 | Resource | Status | Cost |
 |---|---|---|
-| AKS `money-honey-aks` (K8s 1.34, 3× `Standard_B2s`, Cilium v1.18.6) | ✅ Running | ~$90/mo |
+| AKS `money-honey-aks` (K8s 1.34, 3× `Standard_B4ms`, Cilium v1.18.6) | ✅ Running | ~$120/mo |
 | Tetragon DaemonSet (kube-system, 3/3 pods) | ✅ Running | $0 |
 | VNet `money-honey-vnet` + 2 subnets | ✅ | $0 |
 | Key Vault `mh-kv-w8fxwb` | ✅ | <$1/mo |
@@ -14,7 +14,8 @@ Last updated 2026-04-16. Live docs at https://itsamemario0o.github.io/money-hone
 | Splunk public IP (SSH only; web/HEC internal) | ✅ | $3.60/mo |
 | Terraform state SA `mhtfstatemjr26` | ✅ | <$1/mo |
 | Azure federated Service Principal `money-honey-ci` (OIDC for CI) | ✅ | $0 |
-| **Running total** | | **~$165/mo** |
+| Azure Files (knowledge-base + hf-cache) | Standard LRS | <$0.01/mo |
+| **Running total** | | **~$200/mo** |
 
 ## ✅ AKS workloads live
 

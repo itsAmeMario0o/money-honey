@@ -40,6 +40,7 @@ If one layer fails, the others still hold. That is the whole point.
 - [Chatbot internals](chatbot/)
 - [Operations runbooks](runbooks/)
 - [Specifications](specs/)
+- [Lessons learned](lessons-learned.html)
 - [Cost](cost.html) · [Roadmap](roadmap.html)
 
 ## Source

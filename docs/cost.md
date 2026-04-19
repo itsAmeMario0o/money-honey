@@ -12,7 +12,7 @@ Demo project. The numbers below are East US estimates as of early 2026. Your bil
 | Component | SKU | Monthly |
 |---|---|---|
 | AKS control plane | Free tier | $0 |
-| AKS workers (3×) | `Standard_B2s` | ~$90 |
+| AKS workers (3×) | `Standard_B4ms` | ~$120 |
 | AKS node OS disks (3× 32 GB) | Standard SSD | ~$7 |
 | Splunk VM | `Standard_B2ms` | ~$61 |
 | Splunk data disk (64 GB) | Standard SSD | ~$5 |
@@ -24,7 +24,8 @@ Demo project. The numbers below are East US estimates as of early 2026. Your bil
 | GHCR (container images) | Public repo | $0 |
 | GitHub Pages (docs) | Public repo | $0 |
 | Cloudflare Zero Trust | Free plan, ≤50 users | $0 |
-| **Total** | | **~$170–175/mo** |
+| Azure Files (knowledge-base + hf-cache) | Standard LRS, ~108 MB | <$0.01 |
+| **Total** | | **~$200–205/mo** |
 
 ## 🟡 Paused between demos
 
@@ -50,10 +51,10 @@ Both are avoided in v1 (see CLAUDE.md Architecture Decisions). They would add:
 
 ## 💡 Cost-saving tips
 
-1. Run `az aks stop` between demos. Saves ~$90/mo on nodes. Two-minute restart when you need the cluster again.
-2. Drop the Splunk VM to `Standard_B2s` (2 vCPU/4 GB instead of 4/8). Splunk Enterprise Free caps at 500 MB/day ingest, and a B2s handles that. Saves ~$30/mo.
+1. Run `az aks stop` between demos. Saves ~$120/mo on nodes. Two-minute restart when you need the cluster again.
+2. Drop the Splunk VM to `Standard_B2s` (2 vCPU / 4 GB instead of 4 / 8). Splunk Enterprise Free caps at 500 MB/day ingest, and a B2s handles that. Saves ~$30/mo.
 3. Delete the Splunk public IP once Cloudflare Tunnel is live for SSH too. Saves $3.60/mo. (You need SSH to install cloudflared first, so the IP has to exist during bootstrap.)
-4. Use spot instances for the AKS node pool. Spot pricing on `Standard_B2s` often runs $30/mo for all 3 nodes (65-80% discount), but nodes can be reclaimed. Not great for a demo that needs to stay reachable.
+4. Use spot instances for the AKS node pool. Spot pricing on `Standard_B4ms` can cut node costs by 65-80%, but nodes can be reclaimed. Not great for a demo that needs to stay reachable.
 
 ## Anthropic API spend
 
