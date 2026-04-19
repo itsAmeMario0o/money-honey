@@ -1,34 +1,12 @@
-# Azure File share mounts for the FastAPI backend.
-# The storage account + file shares are created by Terraform (storage.tf).
-# The K8s Secret holds the storage account key so the PV can auth.
-# After terraform apply, populate the secret with:
+# Azure File share PVCs for the FastAPI backend.
+# Uses the built-in 'azurefile' StorageClass so AKS dynamically
+# provisions the file shares. No cluster-scoped PV needed, no
+# extra RBAC required.
 #
-#   SA_NAME=$(terraform -chdir=infra/terraform output -raw knowledge_storage_account)
-#   SA_KEY=$(terraform -chdir=infra/terraform output -raw knowledge_storage_key)
-#   kubectl -n money-honey create secret generic azure-files-secret \
-#     --from-literal=azurestorageaccountname=$SA_NAME \
-#     --from-literal=azurestorageaccountkey=$SA_KEY
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: knowledge-base-pv
-  labels:
-    app: fastapi
-    component: storage
-    part-of: money-honey
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
-  azureFile:
-    secretName: azure-files-secret
-    secretNamespace: money-honey
-    shareName: knowledge-base
-    readOnly: false
+# The Terraform-created file shares (storage.tf) are not used by
+# these PVCs. AKS creates its own shares in the MC_ resource group.
+# To use the Terraform shares instead, switch to static PV binding
+# with a cluster-admin role.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -42,32 +20,10 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  storageClassName: azurefile
   resources:
     requests:
       storage: 5Gi
-  storageClassName: ""
-  volumeName: knowledge-base-pv
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: hf-cache-pv
-  labels:
-    app: fastapi
-    component: storage
-    part-of: money-honey
-spec:
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
-  azureFile:
-    secretName: azure-files-secret
-    secretNamespace: money-honey
-    shareName: hf-cache
-    readOnly: false
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -81,8 +37,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  storageClassName: azurefile
   resources:
     requests:
       storage: 1Gi
-  storageClassName: ""
-  volumeName: hf-cache-pv
