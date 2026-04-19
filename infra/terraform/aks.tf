@@ -16,14 +16,15 @@ resource "azurerm_kubernetes_cluster" "money_honey" {
 
   // Default node pool — 3 nodes so Cilium has quorum.
   default_node_pool {
-    name           = "system"
-    node_count     = var.node_count
-    vm_size        = var.node_sku
-    vnet_subnet_id = azurerm_subnet.aks_nodes.id
-    os_disk_size_gb = 32
-    os_disk_type    = "Managed"
-    type            = "VirtualMachineScaleSets"
-    tags            = local.common_tags
+    name                        = "system"
+    node_count                  = var.node_count
+    vm_size                     = var.node_sku
+    temporary_name_for_rotation = "tmppool"
+    vnet_subnet_id              = azurerm_subnet.aks_nodes.id
+    os_disk_size_gb             = 32
+    os_disk_type                = "Managed"
+    type                        = "VirtualMachineScaleSets"
+    tags                        = local.common_tags
   }
 
   // Cluster identity. System-assigned so we don't manage service principal
