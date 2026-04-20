@@ -77,6 +77,12 @@ From a remote office, `kubectl` commands failed with `read: connection reset by 
 
 No server-side fix. Options: personal hotspot, VPN, or asking IT to allowlist the AKS FQDN. The project documents this in STATUS.md so future operators don't spend hours debugging the wrong layer.
 
+## CI deploy timeout vs startup probe budget
+
+The `deploy.yaml` workflow waited 5 minutes for the fastapi rollout to finish. The pod's startup probe allows 15 minutes because embedding 28 MB of PDFs into 1500 FAISS chunks takes ~10 minutes. The workflow timed out and reported failure, even though the pod was healthy and still embedding.
+
+The fix: match the workflow's `--timeout` to the startup probe budget. FastAPI gets 15 minutes. React and Caddy keep 5 minutes since they start in seconds.
+
 ## AKS node pool VM size change requires temporary pool
 
 Changing `vm_size` on the default node pool is not an in-place update. AKS needs `temporary_name_for_rotation` in the Terraform config. It creates a temporary node pool with the new SKU, drains the old nodes, migrates all workloads, then deletes the old pool. Without the field, Terraform fails with a clear error listing every property that requires rotation.
