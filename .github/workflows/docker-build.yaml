@@ -55,7 +55,7 @@ jobs:
 
       # Stage 1: build locally, load into Docker daemon (no push yet).
       - name: Build backend image (local only)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: app
           file: app/Dockerfile
@@ -85,7 +85,7 @@ jobs:
 
       # Stage 3: if scan passed, re-tag + push to GHCR.
       - name: Push backend image (post-scan)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: app
           file: app/Dockerfile
@@ -116,7 +116,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build frontend image (local only)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: frontend
           file: frontend/Dockerfile
@@ -140,7 +140,7 @@ jobs:
           vuln-type: os,library
 
       - name: Push frontend image (post-scan)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: frontend
           file: frontend/Dockerfile
