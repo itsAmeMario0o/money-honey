@@ -42,7 +42,6 @@ jobs:
       # Default model for the AIBOM tool's internal classifier. Cheap,
       # widely available, and accurate enough for component classification.
       AIBOM_LLM_MODEL: gpt-4o-mini
-      AIBOM_LLM_PROVIDER: openai
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,7 +72,6 @@ jobs:
           uv tool run cisco-aibom analyze app \
             -o json -O aibom-app.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-provider "$AIBOM_LLM_PROVIDER" \
             --llm-api-key "$OPENAI_API_KEY"
 
       - name: AIBOM — analyze frontend
@@ -82,7 +80,6 @@ jobs:
           uv tool run cisco-aibom analyze frontend \
             -o json -O aibom-frontend.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-provider "$AIBOM_LLM_PROVIDER" \
             --llm-api-key "$OPENAI_API_KEY"
 
       - name: Summarise detected AI components
