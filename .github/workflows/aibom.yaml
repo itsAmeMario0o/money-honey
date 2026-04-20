@@ -59,7 +59,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "0.5.11"
-          enable-cache: true
+          enable-cache: false
 
       - name: Install cisco-aibom (with agentic + OpenAI extras)
         if: env.OPENAI_API_KEY != ''
