@@ -72,7 +72,8 @@ jobs:
           uv tool run cisco-aibom analyze app \
             -o json -O aibom-app.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-api-key "$OPENAI_API_KEY"
+            --llm-api-key "$OPENAI_API_KEY" \
+            --llm-api-base "https://api.openai.com/v1"
 
       - name: AIBOM — analyze frontend
         if: env.OPENAI_API_KEY != ''
@@ -80,7 +81,8 @@ jobs:
           uv tool run cisco-aibom analyze frontend \
             -o json -O aibom-frontend.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-api-key "$OPENAI_API_KEY"
+            --llm-api-key "$OPENAI_API_KEY" \
+            --llm-api-base "https://api.openai.com/v1"
 
       - name: Summarise detected AI components
         if: env.OPENAI_API_KEY != ''
