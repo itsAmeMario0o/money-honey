@@ -61,33 +61,29 @@ jobs:
           version: "0.5.11"
           enable-cache: false
 
-      - name: Install cisco-aibom (with agentic + OpenAI extras)
+      - name: Install cisco-aibom
         if: env.OPENAI_API_KEY != ''
         run: |
-          uv tool install --python 3.13 "cisco-aibom[agentic,llm-openai]"
-          uv tool run cisco-aibom --version
+          uv tool install --python 3.13 cisco-aibom
+          uv tool run cisco-aibom --help | head -5
 
       - name: AIBOM — analyze app (backend)
         if: env.OPENAI_API_KEY != ''
-        env:
-          AIBOM_LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           uv tool run cisco-aibom analyze app \
-            --output-format json \
-            --output aibom-app.json \
+            -o json -O aibom-app.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-provider "$AIBOM_LLM_PROVIDER"
+            --llm-provider "$AIBOM_LLM_PROVIDER" \
+            --llm-api-key "$OPENAI_API_KEY"
 
       - name: AIBOM — analyze frontend
         if: env.OPENAI_API_KEY != ''
-        env:
-          AIBOM_LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           uv tool run cisco-aibom analyze frontend \
-            --output-format json \
-            --output aibom-frontend.json \
+            -o json -O aibom-frontend.json \
             --llm-model "$AIBOM_LLM_MODEL" \
-            --llm-provider "$AIBOM_LLM_PROVIDER"
+            --llm-provider "$AIBOM_LLM_PROVIDER" \
+            --llm-api-key "$OPENAI_API_KEY"
 
       - name: Summarise detected AI components
         if: env.OPENAI_API_KEY != ''
