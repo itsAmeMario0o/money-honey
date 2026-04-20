@@ -15,5 +15,6 @@ Step-by-step walkthroughs for provisioning and operating Money Honey. Run them r
 | [Key Vault secrets](kv-secrets.html) | Populate Anthropic + Cloudflare secrets that you must supply. |
 | [Cloudflare Tunnel](cloudflare-tunnel.html) | Phase 2: wire the public edge (Layer 8). Tunnel tokens, Public Hostname, Access policies. |
 | [Azure SP for CI](azure-sp-for-ci.html) | One-time setup of the federated Service Principal that GitHub Actions uses to deploy to AKS. |
+| [Knowledge base](knowledge-base.html) | Upload, remove, or replace PDFs in the RAG knowledge base. Azure File share persistence. |
 
 For day-2 operations (rotating a secret, recovering Splunk, rolling back a deploy), see the [runbooks](../runbooks/).
