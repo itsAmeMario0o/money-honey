@@ -60,11 +60,11 @@ jobs:
           version: "0.5.11"
           enable-cache: false
 
-      - name: Install cisco-aibom
+      - name: Install cisco-aibom + download knowledge base
         if: env.OPENAI_API_KEY != ''
         run: |
           uv tool install --python 3.13 cisco-aibom
-          uv tool run cisco-aibom --help | head -5
+          uv tool run cisco-aibom kb download
 
       - name: AIBOM — analyze app (backend)
         if: env.OPENAI_API_KEY != ''
