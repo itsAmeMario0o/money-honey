@@ -72,7 +72,7 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          kubectl -n money-honey rollout status deployment/fastapi --timeout=5m
+          kubectl -n money-honey rollout status deployment/fastapi --timeout=15m
           kubectl -n money-honey rollout status deployment/react --timeout=5m
           kubectl -n money-honey rollout status deployment/caddy --timeout=5m
 
