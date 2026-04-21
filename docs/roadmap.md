@@ -60,7 +60,8 @@ Deferred on purpose. Each item is a clean follow-on project.
 ### Observability
 
 - OTel `token_file:` refactor. Replace the `token: ${SPLUNK_HEC_TOKEN}` env-var substitution in `k8s/otel/configmap.yaml` with `token_file:` pointing at a CSI-mounted path. The token never sits in a Pod env or K8s Secret object; it only exists as a file mounted from Key Vault. Lets you delete the `.trivyignore.yaml` entry for `AVD-KSV-0109`. Requires either moving OTel into the `money-honey` namespace or duplicating the `SecretProviderClass` in `kube-system`.
-- Splunk dashboards as code. Ship `splunk/dashboards/*.xml` (or JSON) defining the views that matter: Tetragon events per minute, policy violations by pod, egress allowlist hits, AIBOM classifier runs, HEC ingest rate vs. 500 MB/day quota. Definitions can be written now; they apply once Splunk has real event flow.
+- ~~Splunk dashboards as code.~~ ✅ Landed. `splunk/dashboards/money-honey-security.json` with 8 panels.
+- OTel Collector: currently deployed but broken (connection refused to Splunk HEC). Ships Tetragon Prometheus metrics (event rate, policy eval latency, counters), not security events. All security audit data flows through the Fluent Bit event pipeline. Decide: fix OTel for operational metrics, or remove it to simplify the stack.
 
 ### Developer workflow
 
