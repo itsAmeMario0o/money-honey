@@ -50,7 +50,7 @@ data:
         Splunk_Token  ${SPLUNK_HEC_TOKEN}
         Splunk_Send_Raw  Off
         event_host    ${HOSTNAME}
-        event_index   main
+        event_index   tetragon
         event_sourcetype  tetragon:json
 
   parsers.conf: |

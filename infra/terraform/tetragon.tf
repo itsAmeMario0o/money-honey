@@ -115,5 +115,6 @@ resource "helm_release" "tetragon" {
     value = "768Mi"
   }
 
+  timeout    = 600
   depends_on = [azurerm_kubernetes_cluster.money_honey]
 }
