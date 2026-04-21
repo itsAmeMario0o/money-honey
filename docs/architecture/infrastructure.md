@@ -19,11 +19,15 @@ Egress allowlist: Claude API via 443/TCP, Splunk HEC on the private subnet (`10.
 
 Network policy stops bad connections. It does not stop a bad process running inside a container that only talks to allowed IPs.
 
-Tetragon watches the kernel. DaemonSet installed via Helm chart `1.3.0` from `helm.cilium.io`. Three `TracingPolicyNamespaced` CRDs are active in `money-honey`:
+Tetragon watches the kernel. DaemonSet installed via Helm chart `1.3.0` from `helm.cilium.io`. Five `TracingPolicyNamespaced` CRDs are active in `money-honey`:
 
 - `process-exec-audit`: logs exec of any binary outside the allowlist (python, uvicorn, node, nginx, caddy, sh, bash).
-- `network-connect-audit`: logs every `tcp_connect()`.
+- `network-connect-audit`: logs every `tcp_connect()` with TCP round-trip time and latency data.
 - `secrets-file-audit`: logs every file open under `/mnt/secrets/`.
+- `network-events`: captures network-level events including connection state changes.
+- `dns-tracking`: records DNS queries and responses, giving visibility into what each pod resolves and where it tries to connect before Layer 1 (Cilium) makes the allow/deny decision.
+
+An export deny list filters out high-volume system noise so the Splunk pipeline stays within the 500 MB/day free budget. Metrics label filters keep Prometheus cardinality manageable.
 
 Policies are audit-only in v1. After the allowlist is validated against real traffic, they switch to SIGKILL enforcement. JSON events are written to `/var/run/cilium/tetragon/tetragon.log` on each node.
 
@@ -41,6 +45,8 @@ Secrets managed: `anthropic-api-key`, `splunk-hec-token`, `cloudflare-tunnel-spl
 
 Layers 1-3 enforce. Layer 7 records. Without a single place to search audit events, you cannot tell whether enforcement is working or even firing.
 
-Splunk Enterprise Free runs on a dedicated Ubuntu 22.04 VM (`Standard_B2ms`). Fluent Bit DaemonSet in `kube-system` tails Tetragon's JSON log and ships to Splunk HEC via `https://<splunk-private-ip>:8088/services/collector`. OpenTelemetry Collector scrapes Tetragon Prometheus metrics on port 2112 and forwards to the same Splunk HEC with `sourcetype=prometheus`.
+Splunk Enterprise Free runs on a dedicated Ubuntu 22.04 VM (`Standard_B2ms`). Fluent Bit DaemonSet in `kube-system` tails Tetragon's JSON log and ships to Splunk HEC via `https://<splunk-private-ip>:8088/services/collector` (event_index=main, sourcetype=tetragon:json). OpenTelemetry Collector scrapes Tetragon Prometheus metrics on port 2112 and forwards to the same Splunk HEC with `sourcetype=prometheus`.
 
-Splunk UI is reachable via its own Cloudflare Tunnel (no direct public port exposure). SSH stays on the public IP, scoped to the operator IP only.
+A custom "Money Honey Security" dashboard built in Dashboard Studio provides 8 panels covering process execution, network connections, DNS queries, file access, and policy violations. The dashboard JSON lives at `splunk/dashboards/` and can be imported into any Splunk instance via the Dashboard Studio import flow. Cisco Security Cloud Splunk app v3.6.4 is installed for future Isovalent/Hubble integration (its pre-built dashboards require ACNS, deferred to v2).
+
+Splunk UI is reachable at https://splunk.rooez.com via its own Cloudflare Tunnel (no direct public port exposure). SSH stays on the public IP, scoped to the operator IP only.

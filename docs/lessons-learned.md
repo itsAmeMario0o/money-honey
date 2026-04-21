@@ -122,3 +122,33 @@ cloudflared's `--metrics` flag defaults to `127.0.0.1:20241`. Kubernetes livenes
 The Tetragon Helm chart concatenates `exportFilename` onto its own `exportDirectory`. Passing a full path like `/var/run/cilium/tetragon/tetragon.log` as `exportFilename` produced a doubled path: `/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log`. Fluent Bit was configured to tail the doubled path, so it worked, but the setup was fragile and confusing.
 
 The fix: set `exportFilename` to the bare filename `tetragon.log`. The chart produces the clean path `/var/run/cilium/tetragon/tetragon.log`. Updated both `tetragon.tf` and the Fluent Bit ConfigMap to match.
+
+## Fluent Bit Read_from_Head only works once
+
+You set `Read_from_Head On` expecting Fluent Bit to start from the top of the file every time it restarts. It does not. Fluent Bit checks its offset database first. If a DB entry already exists for the file, the offset wins and `Read_from_Head` is ignored. The setting only takes effect when Fluent Bit encounters a file it has never tracked before.
+
+If you change the Fluent Bit config and want a clean re-read, you have two options: delete the DB file on each node, or remove the `DB` directive entirely so no offsets persist. We removed the DB directive after discovering this during the Tetragon event pipeline work.
+
+## Fluent Bit event_index routing to a dedicated Splunk index
+
+We created a `tetragon` index in Splunk, updated the HEC token's allowed indexes, and set `event_index tetragon` in the Fluent Bit output config. Events stopped flowing. No errors in Fluent Bit logs, no events in Splunk on either index.
+
+Reverted `event_index` back to `main`. Events resumed immediately. The root cause is still unknown. Possible explanations: the HEC token's default index was still `main` (Splunk sometimes routes to the default regardless of the event-level override), or the index name was not propagated to all search peers before the first event arrived. For now, everything lands in `main`. Revisit if the 500 MB/day free budget becomes a concern.
+
+## Cisco Security Cloud app expects Hubble, not raw Tetragon
+
+The Cisco Security Cloud Splunk app (v3.6.4) installed without issues. Its pre-built dashboards, though, expect data from the Hubble Enterprise fluentd exporter. The app searches for sourcetypes matching `cisco:isovalent*`. We send `tetragon:json` via Fluent Bit.
+
+The result: the app's dashboards render with zero results. The data is in Splunk, but the app cannot find it because the sourcetype and field names do not match what Hubble's exporter produces. Bridging this gap would require either a Splunk props.conf/transforms.conf layer to rename fields and sourcetypes on ingest, or waiting for ACNS + Isovalent Enterprise in v2 (which ships the Hubble exporter natively). We built a custom "Money Honey Security" dashboard in Dashboard Studio instead.
+
+## Helm set blocks cannot handle commas or JSON
+
+Terraform's `helm_release` resource has a `set` block that looks simple: `name = "foo"`, `value = "bar"`. The problem surfaces when the value contains commas or needs to be a JSON/YAML structure. Helm interprets commas in `--set` as list separators, so a value like `"process,network"` becomes two items instead of one string. JSON values fail for similar reasons.
+
+The fix: switch from `set` blocks to a `values` argument with `yamlencode()`. Terraform renders the full YAML, Helm parses it without ambiguity. Every Tetragon config option that takes a list or structured value now goes through `yamlencode`.
+
+## Tetragon Helm release timeout
+
+Tetragon's Helm chart deploys a DaemonSet that must schedule on every node before the release is considered successful. On a three-node cluster with limited CPU, the rollout sometimes took longer than the default Helm timeout. The first `terraform apply` timed out. The second attempt failed because Terraform's state thought the release did not exist, but Helm's release history said it did.
+
+We bumped the timeout to 600 seconds. After repeated context-deadline-exceeded errors, we imported the existing Helm release into Terraform state (`terraform import helm_release.tetragon tetragon`) and ran `terraform apply` again to reconcile. The lesson: set generous timeouts for DaemonSet-based Helm charts from the start, and know that `terraform import` is your escape hatch when Terraform and Helm disagree about whether a release exists.

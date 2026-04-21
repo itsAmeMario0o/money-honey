@@ -89,6 +89,21 @@ The `grep -oE` matches a bare UUID. That avoids storing the CLI's `token=<uuid>`
 7. Review + Submit, then copy the token (just the UUID, not any prefix)
 8. Store it: `az keyvault secret set --vault-name mh-kv-w8fxwb --name splunk-hec-token --value '<uuid>'`
 
+## Import the Money Honey Security dashboard
+
+The project ships a pre-built Dashboard Studio dashboard with 8 panels (process exec, network connections, DNS queries, file access, policy violations, and more). The JSON source lives at `splunk/dashboards/`.
+
+To import:
+
+1. Open the Splunk UI (https://splunk.rooez.com or via SSH port-forward)
+2. Go to Dashboards, click Create New Dashboard
+3. Select Dashboard Studio, then pick "Grid" layout
+4. Click the Source icon (code view) in the top bar
+5. Paste the contents of `splunk/dashboards/money-honey-security.json`
+6. Save as "Money Honey Security"
+
+The dashboard queries `index=main sourcetype=tetragon:json`. If you routed Tetragon events to a different index, update the search strings accordingly.
+
 ## Harden post-install (quick wins)
 
 - In Settings, Server settings, General settings, enable TLS for Splunk Web (upload a cert or generate a local one). Optional if you are routing via Cloudflare Tunnel.
