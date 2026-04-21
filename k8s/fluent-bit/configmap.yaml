@@ -20,9 +20,6 @@ data:
 
     [INPUT]
         Name              tail
-        # Tetragon writes to this path on each node (hostPath-mounted).
-        # exportFilename in tetragon.tf is just "tetragon.log" (not a
-        # full path) so the chart produces a clean directory layout.
         Path              /var/run/cilium/tetragon/tetragon.log
         Parser            json
         Tag               tetragon.*
@@ -40,9 +37,6 @@ data:
     [OUTPUT]
         Name          splunk
         Match         tetragon.*
-        # Splunk HEC on the Splunk VM (private subnet). Splunk VM's
-        # private IP is discovered at deploy time; the deploy script
-        # substitutes SPLUNK_HEC_HOST into this ConfigMap before apply.
         Host          ${SPLUNK_HEC_HOST}
         Port          8088
         TLS           On
@@ -50,7 +44,7 @@ data:
         Splunk_Token  ${SPLUNK_HEC_TOKEN}
         Splunk_Send_Raw  Off
         event_host    ${HOSTNAME}
-        event_index   tetragon
+        event_index   main
         event_sourcetype  tetragon:json
 
   parsers.conf: |
