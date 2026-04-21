@@ -87,7 +87,7 @@ resource "helm_release" "tetragon" {
   // Reduce Prometheus metric cardinality to what matters.
   set {
     name  = "tetragon.metricsLabelFilter"
-    value = "namespace,workload,binary"
+    value = "namespace\\,workload\\,binary"
   }
 
   // Runtime hooks — needed for policy enforcement at pod start.
