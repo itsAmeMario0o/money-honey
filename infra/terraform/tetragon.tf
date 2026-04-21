@@ -48,6 +48,48 @@ resource "helm_release" "tetragon" {
     value = "false"
   }
 
+  // Network event tracking — eBPF socket-level visibility.
+  // Gives Splunk per-flow data: who talked to whom, bytes, latency.
+  set {
+    name  = "tetragon.enableEvents.network"
+    value = "true"
+  }
+
+  // TCP round-trip time as a Prometheus metric. Surfaces latency
+  // between pods and to external APIs (Claude, Splunk HEC).
+  set {
+    name  = "tetragon.layer3.tcp.enabled"
+    value = "true"
+  }
+  set {
+    name  = "tetragon.layer3.tcp.rtt.enabled"
+    value = "true"
+  }
+  set {
+    name  = "tetragon.layer3.latency.enabled"
+    value = "true"
+  }
+
+  // Kernel-level DNS tracking. Every query, response, and latency
+  // from every pod. Without Hubble this is the only DNS visibility.
+  set {
+    name  = "tetragon.dns.enabled"
+    value = "true"
+  }
+
+  // Filter noise from system namespaces in the JSON export log.
+  // Reduces Fluent Bit throughput and Splunk ingest volume.
+  set {
+    name  = "tetragon.exportDenyList"
+    value = "{\"health_check\":true}\n{\"namespace\":[\"\"\\,\"cilium\"\\,\"tetragon\"\\,\"kube-system\"]}"
+  }
+
+  // Reduce Prometheus metric cardinality to what matters.
+  set {
+    name  = "tetragon.metricsLabelFilter"
+    value = "namespace,workload,binary"
+  }
+
   // Runtime hooks — needed for policy enforcement at pod start.
   set {
     name  = "rthooks.enabled"
@@ -58,14 +100,15 @@ resource "helm_release" "tetragon" {
     value = "oci-hooks"
   }
 
-  // Resource requests / limits — right-sized for B2als_v2 nodes.
+  // Resource requests / limits — sized for D2s_v3 nodes with
+  // network + DNS tracking enabled.
   set {
     name  = "tetragon.resources.requests.cpu"
     value = "100m"
   }
   set {
     name  = "tetragon.resources.requests.memory"
-    value = "128Mi"
+    value = "256Mi"
   }
   set {
     name  = "tetragon.resources.limits.cpu"
@@ -73,7 +116,7 @@ resource "helm_release" "tetragon" {
   }
   set {
     name  = "tetragon.resources.limits.memory"
-    value = "512Mi"
+    value = "768Mi"
   }
 
   depends_on = [azurerm_kubernetes_cluster.money_honey]
