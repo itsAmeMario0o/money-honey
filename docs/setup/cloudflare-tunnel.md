@@ -73,19 +73,33 @@ If the pod crash-loops with an auth error, the token in KV is likely stale. Rota
 
 ## Step 4: confirm both tunnels are Healthy in Cloudflare
 
-Open https://one.dash.cloudflare.com, Networks, Tunnels. Both `money-honey-splunk` and `money-honey-chatbot` should show the green HEALTHY indicator within 60 seconds of step 2 / step 3.
+Open https://dash.cloudflare.com, Networks, Connectors, Cloudflare Tunnels. Both `money-honey-splunk` and `money-honey-chatbot` should show the green HEALTHY indicator within 60 seconds of step 2 / step 3.
 
-## Step 5: configure Public Hostnames
+Verify cloudflared pods are stable (zero restarts, 1/1 Running). If the pods crash-loop, check:
+- The metrics server must bind to `0.0.0.0:20241` (not localhost). The deployment args should include `--metrics 0.0.0.0:20241`.
+- Probe ports must match: readiness and liveness probes hit port `20241`, path `/ready`.
 
-For each tunnel, click in and add a Public Hostname:
+## Step 5: update nameservers (if using a custom domain)
+
+If you have a domain registered elsewhere (e.g. Squarespace), update the nameservers to Cloudflare's. In Cloudflare: add the domain (Websites, Add a site), then update the nameservers at your registrar to the pair Cloudflare assigns. DNS propagation takes minutes to hours.
+
+If you're using `*.cfargotunnel.com` hostnames, skip this step.
+
+## Step 6: configure Published Application Routes
+
+The public hostname config lives inside the tunnel, not under the top-level Routes page.
+
+1. Networks, Connectors, Cloudflare Tunnels
+2. Click the tunnel name (e.g. `money-honey-chatbot`)
+3. Go to **Published application routes** (not "Hostname routes" which creates private WARP-only routes)
+4. Add a route:
 
 ### `money-honey-chatbot`
 
 | Field | Value |
 |---|---|
-| Subdomain | `chatbot` |
-| Domain | your custom domain (if you've added one) OR leave blank for a tunnel-assigned URL |
-| Path | *(empty)* |
+| Subdomain | `moneyhoney` (or whatever you chose) |
+| Domain | `rooez.com` (pick from dropdown; must be added to Cloudflare first) |
 | Service type | HTTP |
 | URL | `caddy.money-honey.svc.cluster.local:80` |
 
@@ -94,14 +108,13 @@ For each tunnel, click in and add a Public Hostname:
 | Field | Value |
 |---|---|
 | Subdomain | `splunk` |
-| Domain | same as above |
-| Path | *(empty)* |
+| Domain | `rooez.com` |
 | Service type | HTTP |
 | URL | `localhost:8000` |
 
-Save each. The tunnel now routes public requests to the internal service.
+Save each. The route automatically creates the DNS CNAME record. Do not create a manual CNAME first or the route will fail with "A record with that host already exists."
 
-## Step 6: attach Access policies (email allowlist)
+## Step 7: attach Access policies (email allowlist)
 
 For each tunnel's Application in Zero Trust, Access, Applications:
 
@@ -113,7 +126,7 @@ For each tunnel's Application in Zero Trust, Access, Applications:
 
 Visitors now authenticate (Google, Microsoft, or one-time email PIN) before the tunnel forwards the request. Only emails matching the allowlist get through.
 
-## Step 7: smoke-test end-to-end
+## Step 8: smoke-test end-to-end
 
 From your browser:
 

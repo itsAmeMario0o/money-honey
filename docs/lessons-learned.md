@@ -89,6 +89,34 @@ Changing `vm_size` on the default node pool is not an in-place update. AKS needs
 
 The rotation takes 15-20 minutes. All pods restart on the new nodes. PVCs, Secrets, and ConfigMaps survive because they are cluster-scoped state, not node-local state.
 
+## Cloudflare Tunnel setup is not where the docs say it is
+
+Cloudflare's dashboard reorganized. The old "Public Hostnames" tab on the tunnel detail page no longer exists. The new flow:
+
+1. **Networks → Connectors → Cloudflare Tunnels** (not "Networks → Tunnels")
+2. Click the tunnel name to open it
+3. The tunnel detail page has tabs: Overview, CIDR routes, Hostname routes, Published application routes, Live logs
+4. **Hostname routes** (beta) creates private routes that require the Cloudflare One WARP client. That's NOT what you want for a public-facing app.
+5. **Published application routes** is where public hostname config lives. Add the subdomain, pick the domain from the dropdown, set service type HTTP, and point to the in-cluster origin.
+
+The published application route creates the DNS CNAME automatically. If you already created a manual CNAME record in DNS, delete it first or the route creation fails with "A record with that host already exists."
+
+## cloudflared metrics server binds to localhost by default
+
+cloudflared's `--metrics` flag defaults to `127.0.0.1:20241`. Kubernetes liveness and readiness probes connect from outside the container and can't reach localhost. The pod registers all 4 QUIC connections to Cloudflare's edge, runs for ~90 seconds, then gets killed by the probe. The fix: add `--metrics 0.0.0.0:20241` to the container args so the `/ready` endpoint is reachable from the kubelet. Also confirm the probe port matches (20241, not 2000).
+
+## Full Cloudflare Tunnel setup sequence
+
+1. Create the tunnel in Cloudflare dashboard (Networks → Connectors → Create a tunnel)
+2. Copy the connector token
+3. Store the token in Azure Key Vault (`az keyvault secret set`)
+4. Deploy the cloudflared pod (`kubectl apply -f k8s/cloudflared/`)
+5. Verify pods stabilize at 1/1 Running with zero restarts
+6. Verify tunnel shows HEALTHY in the dashboard
+7. If using a custom domain: update nameservers at your registrar (e.g. Squarespace) to point to Cloudflare
+8. In the tunnel detail page → Published application routes: add the subdomain, domain, and service URL (`HTTP://caddy.money-honey.svc.cluster.local:80`). This creates the DNS record automatically.
+9. Open `https://<subdomain>.<domain>` in a browser
+
 ## Tetragon doubled log path
 
 The Tetragon Helm chart concatenates `exportFilename` onto its own `exportDirectory`. Passing a full path like `/var/run/cilium/tetragon/tetragon.log` as `exportFilename` produced a doubled path: `/var/run/cilium/tetragon/var/run/cilium/tetragon/tetragon.log`. Fluent Bit was configured to tail the doubled path, so it worked, but the setup was fragile and confusing.
