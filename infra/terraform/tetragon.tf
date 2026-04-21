@@ -77,18 +77,14 @@ resource "helm_release" "tetragon" {
     value = "true"
   }
 
-  // Filter noise from system namespaces in the JSON export log.
-  // Reduces Fluent Bit throughput and Splunk ingest volume.
-  set {
-    name  = "tetragon.exportDenyList"
-    value = "{\"health_check\":true}\n{\"namespace\":[\"\"\\,\"cilium\"\\,\"tetragon\"\\,\"kube-system\"]}"
-  }
-
-  // Reduce Prometheus metric cardinality to what matters.
-  set {
-    name  = "tetragon.metricsLabelFilter"
-    value = "namespace\\,workload\\,binary"
-  }
+  // Complex values that can't be expressed via set {} blocks because
+  // Helm's set parser chokes on commas, brackets, and newlines.
+  values = [yamlencode({
+    tetragon = {
+      exportDenyList   = "{\"health_check\":true}\n{\"namespace\":[\"\",\"cilium\",\"tetragon\",\"kube-system\"]}"
+      metricsLabelFilter = "namespace,workload,binary"
+    }
+  })]
 
   // Runtime hooks — needed for policy enforcement at pod start.
   set {
