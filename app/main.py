@@ -78,7 +78,7 @@ def _build_message_list(
     Enforces MAX_HISTORY_TURNS by dropping the oldest turns first.
     RAG retrieval uses the current message only (FR-6).
     """
-    trimmed = history[-MAX_HISTORY_TURNS:] if len(history) > MAX_HISTORY_TURNS else history
+    trimmed = history[-MAX_HISTORY_TURNS:]
 
     messages: list = [SystemMessage(content=system_prompt)]
     for turn in trimmed:

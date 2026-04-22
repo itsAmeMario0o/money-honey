@@ -61,7 +61,7 @@
     "ds_events_by_workload": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | stats count by workload",
+        "query": "index=main sourcetype=tetragon:json | spath | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | stats count by workload",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -71,7 +71,7 @@
     "ds_events_over_time": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | timechart span=5m count by workload",
+        "query": "index=main sourcetype=tetragon:json | spath | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | timechart span=5m count by workload",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -81,7 +81,7 @@
     "ds_network_connections": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | search process_kprobe.function_name=tcp_connect | eval pod='process_kprobe.process.pod.name' | eval dst_ip='process_kprobe.args{}.sock_arg.daddr' | eval dst_port='process_kprobe.args{}.sock_arg.dport' | eval binary='process_kprobe.process.binary' | stats count by pod, binary, dst_ip, dst_port | sort -count",
+        "query": "index=main sourcetype=tetragon:json | spath | search process_kprobe.function_name=tcp_connect | eval pod='process_kprobe.process.pod.name' | eval dst_ip='process_kprobe.args{}.sock_arg.daddr' | eval dst_port='process_kprobe.args{}.sock_arg.dport' | eval binary='process_kprobe.process.binary' | stats count by pod, binary, dst_ip, dst_port | sort -count",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -91,7 +91,7 @@
     "ds_process_execs": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | search process_exec.process.binary=* | eval binary='process_exec.process.binary' | eval namespace='process_exec.process.pod.namespace' | stats count by binary, namespace | sort -count",
+        "query": "index=main sourcetype=tetragon:json | spath | search process_exec.process.binary=* | eval binary='process_exec.process.binary' | eval namespace='process_exec.process.pod.namespace' | stats count by binary, namespace | sort -count",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -101,7 +101,7 @@
     "ds_events_by_node": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | stats count by node_name",
+        "query": "index=main sourcetype=tetragon:json | spath | stats count by node_name",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -111,7 +111,7 @@
     "ds_event_types": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | spath | eval event_type=case(isnotnull(process_exec), \"process_exec\", isnotnull(process_exit), \"process_exit\", isnotnull(process_kprobe), \"process_kprobe\", 1=1, \"other\") | stats count by event_type",
+        "query": "index=main sourcetype=tetragon:json | spath | eval event_type=case(isnotnull(process_exec), \"process_exec\", isnotnull(process_exit), \"process_exit\", isnotnull(process_kprobe), \"process_kprobe\", 1=1, \"other\") | stats count by event_type",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
@@ -121,7 +121,7 @@
     "ds_recent_events": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-1h | spath | eval event_type=case(isnotnull(process_exec), \"exec\", isnotnull(process_exit), \"exit\", isnotnull(process_kprobe), \"kprobe\", 1=1, \"other\") | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | eval binary=coalesce('process_exec.process.binary', 'process_kprobe.process.binary', 'process_exit.process.binary', \"unknown\") | eval pod=coalesce('process_exec.process.pod.name', 'process_kprobe.process.pod.name', 'process_exit.process.pod.name', \"unknown\") | table _time, event_type, workload, pod, binary, node_name | sort -_time | head 50",
+        "query": "index=main sourcetype=tetragon:json | spath | eval event_type=case(isnotnull(process_exec), \"exec\", isnotnull(process_exit), \"exit\", isnotnull(process_kprobe), \"kprobe\", 1=1, \"other\") | eval workload=coalesce('process_exec.process.pod.workload', 'process_kprobe.process.pod.workload', 'process_exit.process.pod.workload', \"unknown\") | eval binary=coalesce('process_exec.process.binary', 'process_kprobe.process.binary', 'process_exit.process.binary', \"unknown\") | eval pod=coalesce('process_exec.process.pod.name', 'process_kprobe.process.pod.name', 'process_exit.process.pod.name', \"unknown\") | table _time, event_type, workload, pod, binary, node_name | sort -_time | head 50",
         "queryParameters": {
           "earliest": "-1h@h",
           "latest": "now"
@@ -131,7 +131,7 @@
     "ds_total_events": {
       "type": "ds.search",
       "options": {
-        "query": "index=main sourcetype=tetragon:json earliest=-24h | stats count",
+        "query": "index=main sourcetype=tetragon:json | stats count",
         "queryParameters": {
           "earliest": "-24h@h",
           "latest": "now"
