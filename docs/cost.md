@@ -51,7 +51,7 @@ Both are avoided in v1 (see CLAUDE.md Architecture Decisions). They would add:
 
 ## 💡 Cost-saving tips
 
-1. Run `az aks stop` between demos. Saves ~$87/mo on nodes. Two-minute restart when you need the cluster again.
+1. Run `az aks stop` between demos. Saves ~$87/mo on nodes. Full commands below. Two-minute restart when you need the cluster again.
 2. Drop the Splunk VM to `Standard_B2s` (2 vCPU / 4 GB instead of 4 / 8). Splunk Enterprise Free caps at 500 MB/day ingest, and a B2s handles that. Saves ~$30/mo.
 3. Delete the Splunk public IP once Cloudflare Tunnel is live for SSH too. Saves $3.60/mo. (You need SSH to install cloudflared first, so the IP has to exist during bootstrap.)
 4. Use spot instances for the AKS node pool. Spot pricing on `Standard_D2s_v3` can cut node costs by 65-80%, but nodes can be reclaimed. Not great for a demo that needs to stay reachable.
@@ -68,3 +68,27 @@ A typical turn uses ~2,500 input tokens (system prompt + 4 RAG chunks + user mes
 - Daily dev testing at ~20 turns/day = $0.08/day = ~$2.40/mo
 
 The $20 prepaid Anthropic credit lasts months at this rate.
+
+## 🛑 Stop everything (between demos)
+
+```zsh
+# Stop AKS (nodes deallocate, pods stop, tunnels disconnect)
+az aks stop --resource-group money-honey-rg --name money-honey-aks
+
+# Stop Splunk VM (optional, saves ~$61/mo extra)
+az vm deallocate --resource-group money-honey-rg --name money-honey-splunk
+```
+
+Both stopped: ~$20/mo (disks + storage only).
+
+## 🟢 Start everything back up
+
+```zsh
+# Start AKS (2-3 min, pods + tunnels reconnect automatically)
+az aks start --resource-group money-honey-rg --name money-honey-aks
+
+# Start Splunk VM (if stopped)
+az vm start --resource-group money-honey-rg --name money-honey-splunk
+```
+
+After AKS starts, all pods, PVCs, secrets, and Cloudflare tunnels come back on their own. No manual intervention needed. The chatbot and Splunk URLs go live again once the tunnel pods reconnect.
