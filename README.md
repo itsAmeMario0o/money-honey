@@ -57,12 +57,12 @@ Add pre-commit guardrails (gitleaks, tfsec, black, ruff, mypy, eslint, prettier,
 | 1. Repo scaffold | ✅ Done |
 | 2. Application layer (FastAPI + React) | ✅ Done — frontend redesign with gradient/glow palette landed |
 | 3. Infrastructure (Terraform) | ✅ Applied to Azure — AKS, KV, VNet, Splunk VM all live |
-| 4. Kubernetes manifests | ✅ All manifests applied — namespace, 8 CNPs, 3 TracingPolicies, 2 SPCs, Fluent Bit, OTel, Caddy, fastapi/react Deployments. App pods waiting on first successful image pull. |
+| 4. Kubernetes manifests | ✅ All workloads running. 8 CNPs, 5 TracingPolicies, 2 SPCs, Fluent Bit, OTel, Caddy, fastapi, react, cloudflared. Azure Files PVCs for knowledge base + HF cache. |
 | 5. CI/CD workflows | ✅ Active — quality + docker-build + deploy + aibom + hubness-scan all wired. Azure SP federated, kubelogin in deploy, Trivy in build, scoped ignores in `.trivyignore.yaml`. |
 | 6. Jekyll docs site | ✅ Live at [itsamemario0o.github.io/money-honey](https://itsamemario0o.github.io/money-honey/) — Merlot theme restyled to match the frontend (honey palette, Space Grotesk, amber glow, dark Rouge code highlighting). Auto-rebuilds on every push to `docs/`. |
-| Cloudflare Tunnel (Layer 8) | 🚧 Splunk VM tunnel installed; chatbot tunnel pod manifest written. Tokens still placeholder in KV. Public Hostname routing pending operator. |
+| Cloudflare Tunnel (Layer 8) | ✅ Both tunnels HEALTHY. Chatbot at moneyhoney.rooez.com, Splunk at splunk.rooez.com. Published application routes configured. |
 | Splunk install | ✅ Splunk Enterprise Free running, HEC token populated in KV |
-| Anthropic key | ⏳ KV placeholder — operator-supplied when ready |
+| Anthropic key | ✅ Key Vault populated, chatbot answering questions |
 | Branch protection | ✅ Force-push + deletion blocked on `main` |
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, build plan, and Claude Code session rules.
