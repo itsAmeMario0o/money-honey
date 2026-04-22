@@ -2,7 +2,9 @@
 
 A financial education chatbot wrapped in eight independent security layers. The chatbot is the demo. The defense-in-depth architecture is the lesson.
 
-📖 **Live docs site:** https://itsamemario0o.github.io/money-honey/
+🍯 Live chatbot: https://moneyhoney.rooez.com
+📊 Live Splunk: https://splunk.rooez.com
+📖 Docs site: https://itsamemario0o.github.io/money-honey/
 
 ## 🎯 The idea
 

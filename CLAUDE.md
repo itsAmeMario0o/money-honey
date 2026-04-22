@@ -447,17 +447,17 @@ Webex Bot via `chrivand/action-webex-js@v1.0.1`. Secrets: `WEBEX_BOT_TOKEN`, `WE
 | Component | SKU | Monthly |
 |-----------|-----|---------|
 | AKS control plane | Free tier | $0 |
-| AKS workers (3x) | Standard_D2s_v3 | ~$120 |
+| AKS workers (3x) | Standard_D2s_v3 | ~$87 |
 | AKS disks (3x 32 GB) | Standard SSD | ~$7.20 |
 | Splunk VM | Standard_B2ms | ~$61 |
 | Splunk disk | 64 GB SSD | ~$4.80 |
 | Public IP (Splunk SSH only) | Standard static | $3.60 |
-| Load Balancer | N/A — Caddy is ClusterIP; Cloudflare Tunnel is the public edge | $0 |
+| Azure Files (knowledge-base + hf-cache) | Standard LRS | <$0.01 |
 | Cloudflare Zero Trust | Free plan, up to 50 users | $0 |
 | Key Vault | Standard | <$1 |
 | Claude API | $20 prepaid | ~$3-5 |
 | Embeddings | Local (sentence-transformers) | $0 |
-| **Total** | | **~$133-137/mo (running)** — Cloudflare saves ~$18 vs. Azure LB |
+| **Total** | | **~$165/mo (running)** |
 
 With `az aks stop` when not demoing: ~$65-70/month (Splunk VM + storage only).
 

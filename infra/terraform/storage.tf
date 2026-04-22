@@ -1,7 +1,8 @@
-// Azure File share for the RAG knowledge base and HuggingFace model cache.
-// Pods mount this via a PVC so PDFs and the embedding model persist across
-// restarts, redeployments, and node replacements. Uploading new PDFs is
-// just `az storage file upload-batch`, no Docker rebuild needed.
+// Azure Storage account for the knowledge-base and hf-cache file shares.
+// The actual file shares are dynamically provisioned by AKS via the
+// built-in azurefile StorageClass (see k8s/app/storage.yaml). This
+// storage account exists for the Terraform outputs (account name + key)
+// but does not manage the shares themselves.
 
 resource "azurerm_storage_account" "knowledge" {
   name                     = "mhknowledge${random_string.kv_suffix.result}"
@@ -12,16 +13,4 @@ resource "azurerm_storage_account" "knowledge" {
   min_tls_version          = "TLS1_2"
 
   tags = local.common_tags
-}
-
-resource "azurerm_storage_share" "knowledge_base" {
-  name               = "knowledge-base"
-  storage_account_id = azurerm_storage_account.knowledge.id
-  quota              = 5
-}
-
-resource "azurerm_storage_share" "hf_cache" {
-  name               = "hf-cache"
-  storage_account_id = azurerm_storage_account.knowledge.id
-  quota              = 1
 }
