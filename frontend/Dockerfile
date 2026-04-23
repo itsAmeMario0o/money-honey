@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 
-FROM nginx:1.29.6-alpine3.23 AS runtime
+FROM nginx:1.29.8-alpine3.23 AS runtime
 
 # Pick up any Alpine package fixes released since the image tag was
 # cut. Belt-and-suspenders against base-image CVE drift between tag
