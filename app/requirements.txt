@@ -1,12 +1,12 @@
-fastapi==0.115.0
+fastapi==0.136.1
 # starlette is left to fastapi's own pin (<0.39, >=0.37.2). The
 # CVE-2024-47874 multipart-form DoS is ignored in .trivyignore.yaml
 # because our /api/chat endpoint accepts JSON only — no multipart
 # parser is exposed. Re-evaluate when we bump fastapi to 0.116+
 # which allows starlette 0.40+.
-uvicorn[standard]==0.32.0
-pydantic==2.9.2
-python-dotenv==1.0.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.3
+python-dotenv==1.2.2
 # langchain ecosystem — sub-packages version tightly with langchain-core.
 # We pin langchain + langchain-community to exact patches (CVE fix) and
 # allow the smaller sub-packages to float within their compatible minors
@@ -26,8 +26,8 @@ pypdf==5.1.0
 # pattern later if needed; for now the deploy image installs everything
 # — the size hit is small.
 black==26.3.1
-ruff==0.8.2
-mypy==1.13.0
+ruff==0.15.12
+mypy==1.20.2
 pytest==8.3.4
 pytest-asyncio==0.25.0
 httpx==0.28.1
